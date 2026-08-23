@@ -1104,3 +1104,140 @@ Enter docker and start ssh to remotely access docker and the visual interface
         The saved points will also be stored in the file.
         
         ![image.png](images/The%20saved%20points%20will%20also%20be%20stored%20in%20the%20file.png)
+---
+
+## GPS Localization — Moving-Start World-Lock & GPS-Optional Mode
+
+### Overview
+
+The `bringup_imu_ekf.launch.py` launch file supports two localization modes:
+
+| Mode | `use_gps` argument | Active nodes |
+|------|-------------------|--------------|
+| **Local only** (default) | `false` | local EKF (`odom` frame), IMU, wheel odometry |
+| **GPS-enabled** | `true` | local EKF + `navsat_transform_node` + global EKF (`map` frame) |
+
+---
+
+### A. GPS-Enabled Mode — Moving-Start World-Lock
+
+#### Why initial heading matters
+
+The EKF fuses local wheel odometry (relative) with GPS position fixes (global / absolute).
+For these two sources to agree, the coordinate frame that `navsat_transform_node` builds
+must be aligned with True-North (ENU).
+
+If the alignment is wrong by even a few degrees, the robot driving *forward* will appear to
+move *sideways* in the GPS frame. The EKF will receive contradictory corrections and its
+covariance will grow unbounded.
+
+**Do not rely on the magnetometer for initial heading** — compass bias, magnetic
+interference from motors and cables, and hard/soft-iron errors make it unreliable.
+
+#### The moving-start solution (`use_odometry_yaw: true`)
+
+`navsat_transform_node` is configured with `use_odometry_yaw: true`.  This means:
+
+1. At boot the node accepts an **arbitrary initial heading** — it makes no assumption.
+2. As the robot moves, the node accumulates GPS fix positions and calculates the physical
+   **displacement vector** of the motion.
+3. Once the robot has travelled far enough in a straight line, the node computes the
+   heading from the GPS track and **snaps the map frame to true ENU orientation**
+   (the "world-lock" event).
+4. From that point forward the global EKF receives GPS odometry that is correctly aligned
+   with the local odometry frame, eliminating yaw conflict.
+
+#### Startup procedure for GPS-enabled mode
+
+Follow these steps **every time** you start the localization stack with GPS:
+
+1. **Power on and wait for a good GPS fix.**
+   - Verify with `ros2 topic echo /gps/fix --once`.
+   - Ensure `status.status >= 0` (fix acquired) and HDOP is low (< 2.0 is ideal).
+   - Moving to open sky and waiting 30–60 s for the fix to stabilise is recommended.
+
+2. **Launch the localization stack with GPS enabled:**
+   ```bash
+   ros2 launch ugv_bringup bringup_imu_ekf.launch.py use_gps:=true
+   ```
+   The terminal will print:
+   ```
+   [bringup_imu_ekf] GPS mode ENABLED — navsat_transform_node + map-frame EKF are active.
+   Drive straight 2-3 m after launch to initialise heading (world-lock).
+   ```
+
+3. **Drive the robot straight forward 2–3 metres** using teleop or a drive script.
+   - Keep speed low and steady (0.3–0.5 m/s).
+   - Avoid curves, turns, or wheel slip during this phase.
+
+4. **Verify alignment:**
+   - Echo `ros2 topic echo /odometry/gps --once` and confirm `pose.pose.position`
+     values change in the direction of travel.
+   - Echo `ros2 topic echo /odometry/global --once` and confirm the position matches
+     the GPS position.
+   - Check that the EKF yaw innovations are small (no oscillations) by watching
+     `/diagnostics` or `/odometry/global`.
+
+5. **Begin autonomous navigation** only after step 4 passes.
+
+#### Caveats and failure recovery
+
+| Situation | Symptom | Recovery |
+|-----------|---------|----------|
+| First motion is curved / turning | Wrong heading lock, robot drifts sideways | Stop, restart launch, repeat straight drive |
+| Wheel slip during init | Odometry disagrees with GPS track, filter diverges | Find firm ground, restart, repeat |
+| Poor GPS signal during init | Heading lock is noisy or never acquired | Move to open sky, wait for better fix, restart |
+| Magnetic interference | N/A — magnetometer is not used (`use_odometry_yaw: true`) | No action needed |
+
+If heading lock fails, **restart the launch** — do not try to recover by driving more.
+The safest approach is always: stop → restart → straight drive.
+
+---
+
+### B. GPS-Disabled Mode (local odom + IMU only)
+
+Run without any GPS hardware or when GPS signal is unavailable:
+
+```bash
+ros2 launch ugv_bringup bringup_imu_ekf.launch.py use_gps:=false
+```
+
+Or simply use the default (no argument needed):
+
+```bash
+ros2 launch ugv_bringup bringup_imu_ekf.launch.py
+```
+
+The terminal will print:
+```
+[bringup_imu_ekf] GPS mode DISABLED — running local odom+IMU only. No global position correction.
+```
+
+**What is active:** local EKF (`odom` frame) fusing wheel odometry and IMU.  
+**What is NOT active:** `navsat_transform_node`, global EKF (`map` frame).
+
+**Expected behaviour and limitations:**
+
+- The robot has a stable local `odom` frame — short-range navigation and SLAM work normally.
+- There is **no absolute global position**. The `map` frame is not published by the EKF.
+  If Nav2 requires a `map→odom` transform, you must provide it another way (e.g., AMCL,
+  Cartographer, or a static identity transform for testing).
+- Odometry **drifts** over time. Long-distance navigation without a map-based correction
+  will accumulate position error.
+- This mode is ideal for **indoor operation**, **GPS-denied environments**, or
+  **initial development / testing** before GPS hardware is integrated.
+
+---
+
+### Configuration files
+
+| File | Purpose |
+|------|---------|
+| `param/ekf.yaml` | Local EKF — odom frame (always active) |
+| `param/ekf_gps.yaml` | Global EKF — map frame (GPS mode only) |
+| `param/navsat_transform_params.yaml` | navsat_transform_node with moving-start init |
+
+To adjust the magnetic declination for your location, edit
+`param/navsat_transform_params.yaml` and set `magnetic_declination_radians`.
+Note: with `use_odometry_yaw: true` this value does not affect the heading
+initialisation but it is good practice to set it correctly.
