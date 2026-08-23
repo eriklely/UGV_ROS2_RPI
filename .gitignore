@@ -1,0 +1,14 @@
+# ROS 2 / colcon
+build/
+install/
+log/
+
+# Python
+__pycache__/
+*.pyc
+
+# Core dumps
+core
+
+# Device files
+ttyAMA0
