@@ -16,7 +16,6 @@
   <depend>imu_complementary_filter</depend>
   <depend>robot_localization</depend>
   <depend>imu_filter_madgwick</depend>
-  <exec_depend>nmea_navsat_driver</exec_depend>
   <export>
     <build_type>ament_python</build_type>
   </export>

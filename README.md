@@ -1106,38 +1106,6 @@ Enter docker and start ssh to remotely access docker and the visual interface
         ![image.png](images/The%20saved%20points%20will%20also%20be%20stored%20in%20the%20file.png)
 ---
 
-## RPI Sensor-Only Bringup
-
-Use the integrated sensor-only bringup on the rover when you want the RPI to publish
-raw sensor streams to the DDS network and leave EKF, GPS fusion, SLAM, and RViz on a
-desktop or laptop:
-
-```bash
-ros2 launch ugv_bringup bringup_sensors_integrated.launch.py
-```
-
-This launcher starts:
-
-- LiDAR driver publishing `/scan`
-- GPS driver publishing `/gps/fix`
-- Raw IMU publishing `/imu/data`
-- Wheel odometry publishing `/odom_raw`
-- Motor driver, robot description / TF, and basic bringup initialization
-
-It does **not** start EKF, IMU filters, `navsat_transform_node`, RViz, or RF2O laser
-odometry.
-
-Typical split deployment:
-
-```bash
-# RPI
-ros2 launch ugv_bringup bringup_sensors_integrated.launch.py
-
-# Desktop / laptop
-export ROS_DOMAIN_ID=0
-ros2 launch ugv_bringup bringup_imu_ekf.launch.py use_gps:=true use_rviz:=true
-```
-
 ## GPS Localization — Moving-Start World-Lock & GPS-Optional Mode
 
 ### Overview
