@@ -1,0 +1,47 @@
+### navsat_transform_node configuration ###
+# Moving-start heading initialization (world-lock via odometry yaw).
+# At boot the global heading is unknown. After driving straight 2-3 m the
+# node derives True-North heading from the GPS displacement vector and snaps
+# the map frame to global ENU orientation automatically.
+navsat_transform_node:
+    ros__parameters:
+
+        # --- Frame / frequency ---
+        frequency: 30.0
+
+        # How long to wait (s) before reporting a failure to acquire a datum.
+        delay: 3.0
+
+        # Set to true so that the node infers initial heading from the direction
+        # of travel (GPS displacement vector) instead of trusting the IMU/mag
+        # heading at startup.  This is the "moving-start world-lock" method.
+        use_odometry_yaw: true
+
+        # Do NOT wait for an explicit datum service call; let the node derive the
+        # datum automatically once GPS + odometry are available and the robot has
+        # moved far enough for a reliable heading estimate.
+        wait_for_datum: false
+
+        # Magnetic declination for your location (radians).
+        # Example: for ~10° East declination set 0.1745; for West use negative.
+        # With use_odometry_yaw: true this value is unused for heading init but
+        # kept for documentation purposes; set to 0.0 if unknown.
+        magnetic_declination_radians: 0.0
+
+        # Yaw offset applied to the converted GPS odometry (radians).
+        # Set to 0.0; any fixed offset should be calibrated in the field.
+        yaw_offset: 0.0
+
+        # Whether to zero-out the altitude component of the GPS-derived odometry.
+        # Keep true for ground robots operating in 2-D mode.
+        zero_altitude: true
+
+        # Whether to broadcast the map->odom transform.  Set false because a
+        # separate EKF instance (world_frame: map) handles that transform.
+        broadcast_utm_transform: false
+
+        # Publish UTM->map transform as child->parent (false = standard).
+        broadcast_utm_transform_as_parent_frame: false
+
+        # If true the node publishes a filtered GPS position for diagnostics.
+        publish_filtered_gps: false
