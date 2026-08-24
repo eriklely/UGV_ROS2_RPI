@@ -53,13 +53,16 @@ def launch_setup(context, *args, **kwargs):
     map_yaml_path = LaunchConfiguration('map', default=os.path.join(ugv_nav_dir, 'maps', 'map.yaml'))
     # Get the emcl param file
     emcl_param_file = os.path.join(emcl_dir, 'config', 'emcl2_quick_start.param.yaml')                        
-    # Include the bringup_lidar launch description
+    # Include the bringup_lidar launch description only in standalone mode.
+    # When standalone:=false the RPI already provides odometry; starting
+    # bringup_lidar here would create a second /odom publisher and conflict.
     bringup_lidar_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(os.path.join(get_package_share_directory('ugv_bringup'), 'launch', 'bringup_lidar.launch.py')),
         launch_arguments={
             'use_rviz': LaunchConfiguration('use_rviz'),
             'rviz_config': 'nav_2d', 
-        }.items()
+        }.items(),
+        condition=IfCondition(LaunchConfiguration('standalone'))
     )
 
     # Include the nav2_bringup_amcl launch description if use_localization is amcl
@@ -122,6 +125,10 @@ def generate_launch_description():
     return LaunchDescription([
         DeclareLaunchArgument('use_localplan', default_value='teb', description='Choose which localplan to use: dwa,teb'),
         DeclareLaunchArgument('use_localization', default_value='amcl', description='Choose which use_localization to use: amcl,cartographer'),
+        DeclareLaunchArgument('use_rviz', default_value='false', description='Whether to launch RViz2'),
+        DeclareLaunchArgument('standalone', default_value='true',
+                              description='true = single-machine mode (starts bringup_lidar with odometry). '
+                                          'false = desktop-only mode (RPI already provides /odom; only Nav2 + RViz are started).'),
         OpaqueFunction(function=launch_setup)
     ])
 
