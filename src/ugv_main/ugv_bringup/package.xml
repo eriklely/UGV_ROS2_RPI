@@ -13,6 +13,9 @@
   <test_depend>python3-pytest</test_depend>
   <depend>rclcpp</depend>
   <depend>std_msgs</depend>
+  <depend>imu_complementary_filter</depend>
+  <depend>robot_localization</depend>
+  <depend>imu_filter_madgwick</depend>
   <export>
     <build_type>ament_python</build_type>
   </export>
