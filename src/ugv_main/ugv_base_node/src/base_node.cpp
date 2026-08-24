@@ -19,7 +19,7 @@ using std::placeholders::_1;
 using namespace std::chrono_literals;
 
 // Variables for quaternion and yaw angles
-float q1, q2, q3;
+float q1 = 0.0f, q2 = 0.0f, q3 = 0.0f;
 float q0 = 1.0;
 float imu_yaw = 0.0;
 float odom_yaw = 0.0;
@@ -69,10 +69,10 @@ class OdomPublisher : public rclcpp::Node
     double dt = 0.0;
     double x_pos_ = 0.0;
     double y_pos_ = 0.0;
-    float pre_odl;
-    float pre_odr;
-    float vx;  // Linear velocity
-    float vw;  // Angular velocity
+    float pre_odl = 0.0f;
+    float pre_odr = 0.0f;
+    float vx = 0.0f;  // Linear velocity
+    float vw = 0.0f;  // Angular velocity
     bool pub_odom_tf_ = false;
     bool is_initialized = false;
     rclcpp::Time last_time_;
@@ -112,6 +112,11 @@ private:
     // Callback to handle IMU data and compute yaw angle from quaternion
     void handle_imu(const std::shared_ptr<sensor_msgs::msg::Imu> msg)
     {
+        if (!std::isfinite(msg->orientation.x) || !std::isfinite(msg->orientation.y) ||
+            !std::isfinite(msg->orientation.z) || !std::isfinite(msg->orientation.w))
+        {
+            return;
+        }
         q1 = msg->orientation.x;
         q2 = msg->orientation.y;
         q3 = msg->orientation.z;
@@ -136,7 +141,13 @@ private:
         {
             init_odl = now_odl;
             init_odr = now_odr;
+            pre_odl = 0.0f;
+            pre_odr = 0.0f;
+            vx = 0.0f;
+            vw = 0.0f;
+            last_time_ = curren_time;
             is_initialized = true;
+            return;
         }
 
         // Adjust odometry readings by subtracting the initial values
@@ -146,6 +157,12 @@ private:
         // Calculate time delta
         dt = (curren_time - last_time_).seconds();
         last_time_ = curren_time;
+        if (dt <= 0.0 || !std::isfinite(dt))
+        {
+            vx = 0.0f;
+            vw = 0.0f;
+            return;
+        }
 
         // Compute distance traveled by each wheel
         float dleft = now_odl - pre_odl;
@@ -162,6 +179,12 @@ private:
         // Compute linear and angular velocities
         vx = dxy_ave / dt;
         vw = dth / dt;
+        if (!std::isfinite(vx) || !std::isfinite(vw))
+        {
+            vx = 0.0f;
+            vw = 0.0f;
+            return;
+        }
 
         // Update position if robot has moved
         if (dxy_ave != 0)
@@ -179,7 +202,7 @@ private:
         }
 
         // Use IMU yaw if available
-        yaw = imu_yaw != 0 ? imu_yaw : odom_yaw;
+        yaw = (std::isfinite(imu_yaw) && imu_yaw != 0.0f) ? imu_yaw : odom_yaw;
     }
 
     // Function to publish odometry data and broadcast transformation
@@ -196,10 +219,31 @@ private:
         // Set the position and orientation in the odometry message
         odom.pose.pose.position.x = x_pos_;
         odom.pose.pose.position.y = y_pos_;
-        odom.pose.pose.orientation.x = q1;
-        odom.pose.pose.orientation.y = q2;
-        odom.pose.pose.orientation.z = q3;
-        odom.pose.pose.orientation.w = q0;
+        double ox = q1;
+        double oy = q2;
+        double oz = q3;
+        double ow = q0;
+        const bool quaternion_finite = std::isfinite(ox) && std::isfinite(oy) &&
+                                       std::isfinite(oz) && std::isfinite(ow);
+        const double quaternion_norm = std::sqrt(ox * ox + oy * oy + oz * oz + ow * ow);
+        if (!quaternion_finite || quaternion_norm < 1e-9)
+        {
+            ox = 0.0;
+            oy = 0.0;
+            oz = 0.0;
+            ow = 1.0;
+        }
+        else
+        {
+            ox /= quaternion_norm;
+            oy /= quaternion_norm;
+            oz /= quaternion_norm;
+            ow /= quaternion_norm;
+        }
+        odom.pose.pose.orientation.x = ox;
+        odom.pose.pose.orientation.y = oy;
+        odom.pose.pose.orientation.z = oz;
+        odom.pose.pose.orientation.w = ow;
 
         // Choose covariance matrix based on the robot's state
         if (vx == 0 && vw == 0)
@@ -214,8 +258,8 @@ private:
         }
 
         // Set linear and angular velocities in the odometry message
-        odom.twist.twist.linear.x = vx;
-        odom.twist.twist.angular.z = vw;
+        odom.twist.twist.linear.x = std::isfinite(vx) ? vx : 0.0;
+        odom.twist.twist.angular.z = std::isfinite(vw) ? vw : 0.0;
 
         // Publish the odometry message
         odom_publisher_->publish(odom);
@@ -230,10 +274,10 @@ private:
             // Set translation and rotation for the transform
             trans.transform.translation.x = x_pos_;
             trans.transform.translation.y = y_pos_;
-            trans.transform.rotation.x = q1;
-            trans.transform.rotation.y = q2;
-            trans.transform.rotation.z = q3;
-            trans.transform.rotation.w = q0;
+            trans.transform.rotation.x = ox;
+            trans.transform.rotation.y = oy;
+            trans.transform.rotation.z = oz;
+            trans.transform.rotation.w = ow;
 
             // Broadcast the transformation
             tf_broadcaster_->sendTransform(trans);
