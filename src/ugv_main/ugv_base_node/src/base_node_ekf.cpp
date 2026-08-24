@@ -19,7 +19,7 @@ using std::placeholders::_1;
 using namespace std::chrono_literals;
 
 // Declare variables
-float q1, q2, q3;
+float q1 = 0.0f, q2 = 0.0f, q3 = 0.0f;
 float q0 = 1.0;
 float imu_yaw = 0.0;
 float odom_yaw = 0.0;
@@ -68,10 +68,10 @@ class OdomPublisher : public rclcpp::Node
     double dt = 0.0;
     double x_pos_ = 0.0;
     double y_pos_ = 0.0;
-    float pre_odl;
-    float pre_odr;
-    float vx;
-    float vw;     
+    float pre_odl = 0.0f;
+    float pre_odr = 0.0f;
+    float vx = 0.0f;
+    float vw = 0.0f;     
     bool pub_odom_tf_ = false;
     bool is_initialized = false;
     rclcpp::Time last_time_;
@@ -132,7 +132,13 @@ private:
         {
             init_odl = now_odl;
             init_odr = now_odr;
+            pre_odl = 0.0f;
+            pre_odr = 0.0f;
+            vx = 0.0f;
+            vw = 0.0f;
+            last_time_ = curren_time;
             is_initialized = true;
+            return;
         }
 
         now_odl -= init_odl;
@@ -140,6 +146,12 @@ private:
 
         dt = (curren_time - last_time_).seconds();
         last_time_ = curren_time;
+        if (dt <= 0.0 || !std::isfinite(dt))
+        {
+            vx = 0.0f;
+            vw = 0.0f;
+            return;
+        }
 
         float dleft = now_odl - pre_odl;
         float dright = now_odr - pre_odr;
@@ -151,6 +163,12 @@ private:
         float dth = (dright - dleft) / 0.175;
         vx = dxy_ave / dt;
         vw = dth / dt;
+        if (!std::isfinite(vx) || !std::isfinite(vw))
+        {
+            vx = 0.0f;
+            vw = 0.0f;
+            return;
+        }
 
         if (dxy_ave != 0)
         {
@@ -184,17 +202,18 @@ private:
         odom.pose.pose.position.z = 0.0;
 
         // Robot's heading in quaternion
+        const double safe_yaw = std::isfinite(yaw) ? yaw : 0.0;
         odom.pose.pose.orientation.x = 0.0;
         odom.pose.pose.orientation.y = 0.0;
-        odom.pose.pose.orientation.z = sin(yaw / 2.0);
-        odom.pose.pose.orientation.w = cos(yaw / 2.0);
+        odom.pose.pose.orientation.z = sin(safe_yaw / 2.0);
+        odom.pose.pose.orientation.w = cos(safe_yaw / 2.0);
 
-        odom.twist.twist.linear.x = vx;
+        odom.twist.twist.linear.x = std::isfinite(vx) ? vx : 0.0;
         odom.twist.twist.linear.y = 0.0;
         odom.twist.twist.linear.z = 0.0;
         odom.twist.twist.angular.x = 0.0;
         odom.twist.twist.angular.y = 0.0;
-        odom.twist.twist.angular.z = vw;
+        odom.twist.twist.angular.z = std::isfinite(vw) ? vw : 0.0;
 
         uint8_t i = 0;
         if (vx == 0 || vw == 0)
@@ -234,8 +253,8 @@ private:
 
             t.transform.rotation.x = 0.0;
             t.transform.rotation.y = 0.0;
-            t.transform.rotation.z = sin(yaw / 2.0);
-            t.transform.rotation.w = cos(yaw / 2.0);
+            t.transform.rotation.z = sin(safe_yaw / 2.0);
+            t.transform.rotation.w = cos(safe_yaw / 2.0);
             tf_broadcaster_->sendTransform(t);
         }
     }
