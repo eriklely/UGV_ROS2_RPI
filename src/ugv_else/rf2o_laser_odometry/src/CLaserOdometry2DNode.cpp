@@ -61,12 +61,12 @@ CLaserOdometry2DNode::CLaserOdometry2DNode(): Node("CLaserOdometry2DNode")
   }
   else
   {
-    // init to 0
+    // init to 0 with identity quaternion (w=1, x=y=z=0)
     GT_pose_initialized = true;
     initial_robot_pose.pose.pose.position.x = 0;
     initial_robot_pose.pose.pose.position.y = 0;
     initial_robot_pose.pose.pose.position.z = 0;
-    initial_robot_pose.pose.pose.orientation.w = 0;
+    initial_robot_pose.pose.pose.orientation.w = 1.0;  // Identity quaternion
     initial_robot_pose.pose.pose.orientation.x = 0;
     initial_robot_pose.pose.pose.orientation.y = 0;
     initial_robot_pose.pose.pose.orientation.z = 0;
@@ -183,7 +183,7 @@ void CLaserOdometry2DNode::process()
       if (!warning_issued)
       {
           RCLCPP_WARN(get_logger(), "Waiting for laser_scans....");
-          warning_issued = true; // …Ë÷√æØ∏Ê±Í÷æ
+          warning_issued = true; // ¬≥¬±√æ¬∞¬Æ√å√∏√Å¬º¬±√™
       }
   }
 }
