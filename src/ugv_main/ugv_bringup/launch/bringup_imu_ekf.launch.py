@@ -111,7 +111,9 @@ def generate_launch_description():
     log_gps_enabled = LogInfo(
         condition=IfCondition(LaunchConfiguration('use_gps')),
         msg='[bringup_imu_ekf] GPS mode ENABLED — '
-            'navsat_transform_node + map-frame EKF are active. '
+            'navsat_transform_node + map-frame EKF are active '
+            '(map-frame EKF TF publish is disabled in ekf_gps.yaml; '
+            'AMCL or GMapping remains sole owner of map->odom). '
             'Drive straight 2-3 m after launch to initialise heading (world-lock).'
     )
     log_gps_disabled = LogInfo(
@@ -137,8 +139,10 @@ def generate_launch_description():
         ]
     )
 
-    # Global EKF (map frame) — fuses GPS-derived odometry to provide the
-    # map->odom transform used by Nav2 for global waypoint following.
+    # Global EKF (map frame) — fuses GPS-derived odometry to provide a
+    # global fused odometry estimate only. TF publishing is disabled in
+    # ekf_gps.yaml so AMCL (navigation) or GMapping (mapping) remains
+    # sole owner of map->odom.
     ekf_node_map = Node(
         package='robot_localization',
         executable='ekf_node',

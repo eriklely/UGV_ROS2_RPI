@@ -40,7 +40,16 @@ def launch_setup(context, *args, **kwargs):
 
     # Get the use_localplan launch configuration
     use_localplan = context.launch_configurations['use_localplan']
-    
+    use_localization = context.launch_configurations['use_localization']
+    use_gps = context.launch_configurations['use_gps'].lower()
+
+    # Safety gate: AMCL is the sole map->odom owner for navigation.
+    # Requiring use_gps:=true prevents accidental startup without a global source.
+    if use_localization == 'amcl' and use_gps != 'true':
+        raise RuntimeError(
+            "Invalid launch combination: use_localization:=amcl requires use_gps:=true."
+        )
+
     # Get the localplan config file
     param_file = get_localplan_config_file(context)
     
@@ -137,6 +146,8 @@ def generate_launch_description():
         DeclareLaunchArgument('use_localplan', default_value='teb', description='Choose which localplan to use: dwa,teb'),
         DeclareLaunchArgument('use_localization', default_value='amcl', description='Choose which use_localization to use: amcl,cartographer'),
         DeclareLaunchArgument('use_rviz', default_value='false', description='Whether to launch RViz2'),
+        DeclareLaunchArgument('use_gps', default_value='true',
+                              description='Global source toggle. AMCL navigation requires use_gps:=true (TF ownership policy).'),
         DeclareLaunchArgument('standalone', default_value='true',
                               description='true = single-machine mode (starts bringup_lidar with odometry). '
                                           'false = desktop-only mode (RPI already provides /odom; only Nav2 + RViz are started).'),
