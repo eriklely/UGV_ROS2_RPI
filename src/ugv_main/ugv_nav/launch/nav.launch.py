@@ -65,6 +65,16 @@ def launch_setup(context, *args, **kwargs):
         condition=IfCondition(LaunchConfiguration('standalone'))
     )
 
+    # Include display (RViz) separately so it works regardless of standalone mode
+    display_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(os.path.join(get_package_share_directory('ugv_description'), 'launch', 'display.launch.py')),
+        launch_arguments={
+            'use_rviz': LaunchConfiguration('use_rviz'),
+            'rviz_config': 'nav_2d',
+        }.items(),
+        condition=UnlessCondition(LaunchConfiguration('standalone'))
+    )
+
     # Include the nav2_bringup_amcl launch description if use_localization is amcl
     nav2_bringup_amcl_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(os.path.join(nav2_bringup_dir, 'launch', 'bringup_launch.py')),
@@ -112,6 +122,7 @@ def launch_setup(context, *args, **kwargs):
     # Return the list of launch descriptions
     return [
         bringup_lidar_launch,
+        display_launch,
         nav2_bringup_amcl_launch,
         nav2_bringup_emcl_launch,
         emcl_launch,
