@@ -17,6 +17,8 @@
 
 #include "rf2o_laser_odometry/CLaserOdometry2DNode.hpp"
 
+#include <cmath>   // std::isfinite, std::sqrt
+
 using namespace rf2o;
 
 CLaserOdometry2DNode::CLaserOdometry2DNode(): Node("CLaserOdometry2DNode")
@@ -206,55 +208,101 @@ void CLaserOdometry2DNode::initPoseCallBack(const nav_msgs::msg::Odometry::Share
 
 
 /**
- * Publish current odocmetry estimation over ROS
- * According to the node parameters it will publish over tf and/or especified topic
-*/
+ * Helper: returns true if all four quaternion components are finite and the
+ * quaternion has a non-zero norm.  Solver-side guards reduce the probability
+ * of NaN propagation, but a publish-time gate is the last line of defence:
+ * even a single bad frame would otherwise corrupt the TF tree with
+ * TF_NAN_INPUT / TF_DENORMALIZED_QUATERNION errors.
+ */
+static bool quaternionValid(const geometry_msgs::msg::Quaternion &q, double &norm_out)
+{
+  if (!std::isfinite(q.x) || !std::isfinite(q.y) ||
+      !std::isfinite(q.z) || !std::isfinite(q.w))
+  {
+    norm_out = 0.0;
+    return false;
+  }
+  norm_out = std::sqrt(q.x*q.x + q.y*q.y + q.z*q.z + q.w*q.w);
+  return std::isfinite(norm_out) && norm_out > 1e-9;
+}
+
+
+/**
+ * Publish current odometry estimation over ROS.
+ * According to the node parameters it will publish over tf and/or specified topic.
+ */
 void CLaserOdometry2DNode::publish()
 {
-  // 1. publish odom as a topic (no harm!)
   RCLCPP_DEBUG(get_logger(), "Publishing odom over topic:[%s]", odom_topic.c_str());
+
+  // Build quaternion from current estimated yaw.
   tf2::Quaternion tf_quaternion;
   tf_quaternion.setRPY(0.0, 0.0, rf2o::getYaw(rf2o_ref.robot_pose_.rotation()));
   geometry_msgs::msg::Quaternion quaternion = tf2::toMsg(tf_quaternion);
-  
-  // compose odom msg
+
+  // --- Publish-time quaternion validation ---
+  // Even when solver-side guards are in place, numerical edge cases (e.g.
+  // degenerate scans, dt≈0, first-iteration instability) can still produce
+  // NaN/denormalised quaternions.  We validate here so that neither the /odom
+  // topic nor the TF tree are ever poisoned with invalid data.
+  double qnorm = 0.0;
+  const bool pos_x_ok = std::isfinite(rf2o_ref.robot_pose_.translation()(0));
+  const bool pos_y_ok = std::isfinite(rf2o_ref.robot_pose_.translation()(1));
+  const bool quat_ok  = quaternionValid(quaternion, qnorm);
+
+  if (!pos_x_ok || !pos_y_ok || !quat_ok)
+  {
+    RCLCPP_WARN_THROTTLE(
+      get_logger(), *get_clock(), 2000,
+      "Dropping invalid odom/TF for child_frame_id \"%s\": "
+      "translation finite=(%d,%d), quaternion valid=%d (norm=%.6f)",
+      base_frame_id.c_str(),
+      static_cast<int>(pos_x_ok), static_cast<int>(pos_y_ok),
+      static_cast<int>(quat_ok), qnorm);
+    return;  // do NOT publish invalid data
+  }
+
+  // Normalize quaternion before publish to satisfy TF's unit-norm requirement.
+  quaternion.x /= qnorm;
+  quaternion.y /= qnorm;
+  quaternion.z /= qnorm;
+  quaternion.w /= qnorm;
+
+  // 1. Publish odom as a topic.
   nav_msgs::msg::Odometry odom;
-  odom.header.stamp = rf2o_ref.last_odom_time;    // the time of the last scan used!
+  odom.header.stamp    = rf2o_ref.last_odom_time;   // time of last scan used
   odom.header.frame_id = odom_frame_id;
-  //set the position
+  // set the position
   odom.pose.pose.position.x = -1.0*rf2o_ref.robot_pose_.translation()(0);
   odom.pose.pose.position.y = -1.0*rf2o_ref.robot_pose_.translation()(1);
   odom.pose.pose.position.z = 0.0;
   odom.pose.pose.orientation = quaternion;
-  //set the velocity
+  // set the velocity
   odom.child_frame_id = base_frame_id;
-  odom.twist.twist.linear.x = rf2o_ref.lin_speed;    //linear speed
-  odom.twist.twist.linear.y = 0.0;
-  odom.twist.twist.angular.z = rf2o_ref.ang_speed;   //angular speed
-  //publish the message
+  odom.twist.twist.linear.x  = rf2o_ref.lin_speed;   // linear speed
+  odom.twist.twist.linear.y  = 0.0;
+  odom.twist.twist.angular.z = rf2o_ref.ang_speed;   // angular speed
   odom_pub->publish(odom);
-  
+
   sensor_msgs::msg::Imu imu;
-  
-  imu.header.stamp = rf2o_ref.last_odom_time;
+  imu.header.stamp    = rf2o_ref.last_odom_time;
   imu.header.frame_id = odom_frame_id;
-  imu.orientation = quaternion;
-  
+  imu.orientation     = quaternion;
   imu_pub->publish(imu);
-  
-  // 2. publish over tf? (one one node should publish this transform!)
+
+  // 2. Publish over TF (only one node should publish this transform).
   if (publish_tf)
   {
     RCLCPP_DEBUG(get_logger(), "Publishing TF: [base_link] to [odom]");
     geometry_msgs::msg::TransformStamped odom_trans;
-    odom_trans.header.stamp = rf2o_ref.last_odom_time;    // the time of the last scan used!
+    odom_trans.header.stamp    = rf2o_ref.last_odom_time;   // time of last scan used
     odom_trans.header.frame_id = odom_frame_id;
-    odom_trans.child_frame_id = base_frame_id;
+    odom_trans.child_frame_id  = base_frame_id;
     odom_trans.transform.translation.x = -1.0*rf2o_ref.robot_pose_.translation()(0);
     odom_trans.transform.translation.y = -1.0*rf2o_ref.robot_pose_.translation()(1);
     odom_trans.transform.translation.z = 0.0;
     odom_trans.transform.rotation = quaternion;
-    //send the transform
+    // send the transform — quaternion has been validated and normalised above
     odom_broadcaster->sendTransform(odom_trans);
   }
 }
