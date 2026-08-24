@@ -86,7 +86,7 @@ void CLaserOdometry2D::init(const sensor_msgs::msg::LaserScan& scan,
 
   // Get the initial laser pose assuming laser is fixed with respect the base_link
   laser_pose_    = robot_initial_pose * laser_pose_on_robot_;
-  laser_oldpose_ = laser_oldpose_;
+  laser_oldpose_ = robot_initial_pose * laser_pose_on_robot_;
 
 
   // Init rf2o module (internal)
@@ -495,9 +495,15 @@ void CLaserOdometry2D::calculaterangeDerivativesSurface()
 
   //Spatial derivatives
   for (unsigned int u = 1; u < cols_i-1; u++)
-    dtita(u) = (rtita(u-1)*(range_inter[image_level](u+1)-
-                range_inter[image_level](u)) + rtita(u)*(range_inter[image_level](u) -
-        range_inter[image_level](u-1)))/(rtita(u)+rtita(u-1));
+  {
+    const float denom = rtita(u) + rtita(u-1);
+    if (denom > 1e-6f)
+      dtita(u) = (rtita(u-1)*(range_inter[image_level](u+1)-
+                  range_inter[image_level](u)) + rtita(u)*(range_inter[image_level](u) -
+          range_inter[image_level](u-1))) / denom;
+    else
+      dtita(u) = 0.f;
+  }
 
   dtita(0) = dtita(1);
   dtita(cols_i-1) = dtita(cols_i-2);
@@ -582,7 +588,7 @@ void CLaserOdometry2D::computeWeights()
           kdtita*(dtita(u)*dtita(u)) +
           k2d*(std::abs(dtitat) + std::abs(dtita2));
 
-      weights(u) = std::sqrt(1.f/w_der);
+      weights(u) = (w_der > 1e-6f) ? std::sqrt(1.f/w_der) : 0.f;
     }
 
   const float inv_max = 1.f / weights.maxCoeff();
@@ -700,7 +706,7 @@ void CLaserOdometry2D::solveSystemNonLinear()
   //    printf("\n Aver dt = %f, aver res = %f", aver_dt, aver_res);
 
 
-  const float k = 10.f/aver_dt; //200
+  const float k = (aver_dt > 1e-6f) ? 10.f/aver_dt : 0.f; //200
   //float energy = 0.f;
   //for (unsigned int i=0; i<res.rows(); i++)
   //	energy += log(1.f + mrpt::math::square(k*res(i)));
@@ -865,11 +871,9 @@ bool CLaserOdometry2D::filterLevelSolution()
 
   kai_loc_sub(0) = -fps*acu_trans(0,2);
   kai_loc_sub(1) = -fps*acu_trans(1,2);
-  if (acu_trans(0,0) > 1.f)
-    kai_loc_sub(2) = 0.f;
-  else
   {
-    kai_loc_sub(2) = -fps*std::acos(acu_trans(0,0))*rf2o::sign(acu_trans(1,0));
+    const float cos_val = std::max(-1.f, std::min(1.f, acu_trans(0,0)));
+    kai_loc_sub(2) = -fps*std::acos(cos_val)*rf2o::sign(acu_trans(1,0));
   }
   kai_loc_sub += kai_loc_old_;
 
@@ -927,12 +931,9 @@ void CLaserOdometry2D::PoseUpdate()
   //--------------------------------------------------------
   kai_loc_(0) = fps*acu_trans(0,2);
   kai_loc_(1) = fps*acu_trans(1,2);
-
-  if (acu_trans(0,0) > 1.f)
-    kai_loc_(2) = 0.f;
-  else
   {
-    kai_loc_(2) = fps*std::acos(acu_trans(0,0))*rf2o::sign(acu_trans(1,0));
+    const float cos_val = std::max(-1.f, std::min(1.f, acu_trans(0,0)));
+    kai_loc_(2) = fps*std::acos(cos_val)*rf2o::sign(acu_trans(1,0));
   }
 
   //cout << endl << "Arc cos (incr tita): " << kai_loc_(2);
