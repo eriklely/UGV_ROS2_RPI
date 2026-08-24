@@ -40,6 +40,11 @@ def launch_setup(context, *args, **kwargs):
 
     # Get the use_localplan launch configuration
     use_localplan = context.launch_configurations['use_localplan']
+    use_localization = context.launch_configurations['use_localization']
+    use_gps = context.launch_configurations['use_gps'].lower()
+
+    if use_localization == 'amcl' and use_gps != 'true':
+        raise RuntimeError("Invalid launch combination: use_localization=amcl requires use_gps:=true.")
     
     # Get the localplan config file
     param_file = get_localplan_config_file(context)
@@ -136,6 +141,7 @@ def generate_launch_description():
     return LaunchDescription([
         DeclareLaunchArgument('use_localplan', default_value='teb', description='Choose which localplan to use: dwa,teb'),
         DeclareLaunchArgument('use_localization', default_value='amcl', description='Choose which use_localization to use: amcl,cartographer'),
+        DeclareLaunchArgument('use_gps', default_value='true', description='GPS mode toggle; AMCL navigation requires use_gps:=true.'),
         DeclareLaunchArgument('use_rviz', default_value='false', description='Whether to launch RViz2'),
         DeclareLaunchArgument('standalone', default_value='true',
                               description='true = single-machine mode (starts bringup_lidar with odometry). '
