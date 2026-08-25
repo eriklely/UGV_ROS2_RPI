@@ -61,8 +61,9 @@ while true; do
     echo -e "${BLUE}=== RPI MODES ===${NC}"
     echo "  1) Bringup Lidar only     → ros2 launch ugv_bringup bringup_lidar.launch.py use_rviz:=false"
     echo "  2) Bringup IMU + EKF      → ros2 launch ugv_bringup bringup_imu_ekf.launch.py use_rviz:=false"
-    echo "  3) GPS EKF Bringup  [RUN ON RPI]    → ros2 launch ugv_bringup bringup_gps_ekf.launch.py use_rviz:=false"
     echo "     (NOTE: use option 2 instead of 1 if you want IMU/EKF fused odometry)"
+    echo "  3) GPS EKF Bringup  [RUN ON RPI]    → ros2 launch ugv_bringup bringup_gps_ekf.launch.py use_rviz:=false"
+    echo "     (GPS input: /gps/fix from iPhone — starts navsat_transform + dual EKF)"
     echo
     echo -e "${BLUE}=== LAPTOP / STANDALONE MODES ===${NC}"
     echo "  4) Gmapping SLAM          → ros2 launch ugv_slam gmapping.launch.py use_rviz:=true"
