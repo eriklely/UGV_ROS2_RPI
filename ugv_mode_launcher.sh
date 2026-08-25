@@ -71,9 +71,9 @@ while true; do
     echo "  7) Navigation EMCL/TEB    → ros2 launch ugv_nav nav.launch.py use_rviz:=true use_localization:=emcl use_localplan:=teb"
     echo "  8) RTABMAP RGB-D          → ros2 launch ugv_slam rtabmap_rgbd.launch.py use_rviz:=true"
     echo
-    echo -e "${BLUE}=== GPS MODES (GPS input: /gps/fix (iPhone)) ===${NC}"
-    echo "  9) GPS EKF Bringup        → ros2 launch ugv_bringup bringup_gps_ekf.launch.py use_rviz:=false"
-    echo " 10) GPS Waypoint Mission   → ros2 launch ugv_nav nav_gps_waypoints.launch.py use_rviz:=true"
+    echo -e "${BLUE}=== GPS MODES (GPS input: /gps/fix from iPhone) ===${NC}"
+    echo "  9) GPS EKF Bringup  [RUN ON RPI]    → ros2 launch ugv_bringup bringup_gps_ekf.launch.py use_rviz:=false"
+    echo " 10) GPS Nav + Waypoints [RUN ON LAPTOP] → ros2 launch ugv_nav nav_gps_waypoints.launch.py use_rviz:=true"
     echo
     echo -e "${CYAN}GPS/Vizanti note:${NC} GPS remains available separately. For aerial map use, run Vizanti independently"
     echo "(it reads /gps/fix directly; no nav/slam integration needed)."
@@ -148,19 +148,23 @@ while true; do
             ;;
         9)
             print_header
-            echo -e "${GREEN}>>> GPS EKF Bringup${NC}"
+            echo -e "${GREEN}>>> GPS EKF Bringup  [RUN ON RPI]${NC}"
             echo "Command: ros2 launch ugv_bringup bringup_gps_ekf.launch.py use_rviz:=false"
             echo
             echo -e "${CYAN}GPS input: /gps/fix (iPhone)${NC}"
+            echo -e "${CYAN}Starts: hardware bringup + navsat_transform + dual EKF (local + global)${NC}"
+            echo -e "${CYAN}Outputs: /odometry/global and map→odom TF for Nav2 on laptop${NC}"
             echo
             ros2 launch ugv_bringup bringup_gps_ekf.launch.py use_rviz:=false
             ;;
         10)
             print_header
-            echo -e "${GREEN}>>> GPS Waypoint Mission${NC}"
+            echo -e "${GREEN}>>> GPS Nav + Waypoints  [RUN ON LAPTOP]${NC}"
             echo "Command: ros2 launch ugv_nav nav_gps_waypoints.launch.py use_rviz:=true"
             echo
-            echo -e "${CYAN}GPS input: /gps/fix (iPhone)${NC}"
+            echo -e "${CYAN}GPS input: /gps/fix (iPhone) — make sure mode 9 is running on RPi first${NC}"
+            echo -e "${CYAN}Starts: Nav2 (AMCL/TEB) + RViz + GPS waypoint follower${NC}"
+            echo -e "${CYAN}Edit waypoints: src/ugv_main/ugv_nav/config/gps_waypoints_example.yaml${NC}"
             echo
             ros2 launch ugv_nav nav_gps_waypoints.launch.py use_rviz:=true
             ;;
