@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
-"""set_datum.py — Helper utility to pre-set the navsat_transform_node datum.
+"""set_datum.py — Optional helper utility to pre-set the navsat_transform_node datum.
 
 Usage
 -----
 Run this script AFTER bringup_imu_ekf.launch.py with use_gps:=true is active.
 It calls the /navsat_transform_node/set_datum service to lock the map-frame
-origin to a known lat/lon/altitude, which is useful when:
+origin to a known lat/lon/altitude when you explicitly want a fixed datum,
+which is useful when:
 
   - You want repeatable map-frame coordinates across multiple runs.
   - Your robot starts indoors or in a GPS-denied area and you want to prime
@@ -30,7 +31,7 @@ Datum / service workflow
 
 2. Wait for navsat_transform_node to initialise (watch /odometry/gps topic).
 
-3. Call this script to lock the datum BEFORE driving:
+3. Optionally call this script to lock the datum to a known origin:
      ros2 run ugv_bringup set_datum --lat 52.3676 --lon 4.9041
 
 4. Verify the map origin:
@@ -41,9 +42,9 @@ coordinates.  Subsequent GPS fixes will be expressed relative to this origin,
 giving stable, reproducible map-frame positions across power cycles (as long
 as you call set_datum at the same location each time).
 
-Note: If wait_for_datum is set to true in navsat_transform_params.yaml the
-      node waits for this service call before publishing /odometry/gps at all.
-      This script can therefore also serve as a "release" trigger in that mode.
+Note: The default GPS startup path no longer depends on this service call.
+      This utility remains available when you want repeatable coordinates
+      across power cycles or a manually chosen map origin.
 """
 
 import argparse

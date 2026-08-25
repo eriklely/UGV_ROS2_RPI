@@ -41,10 +41,10 @@ These exact same file edits must be replicated to `UGV_ROS2_LAPTOP` and `UGV_ROS
 | `transform_timeout` | `0.0` | `0.1` | Same as local EKF. |
 | `odom0_pose_rejection_threshold` | `20.0` | `5.0` | Same as local EKF. |
 | `odom0_twist_rejection_threshold` | `1.542` | `3.0` | Same as local EKF. |
-| `odom1_pose_rejection_threshold` | `2.0` | `5.0` | GPS-derived odometry naturally has multi-metre noise. A threshold of 2.0 (Mahalanobis) rejects almost every GPS correction, making the global EKF useless. 5.0 allows realistic GPS corrections to pass while still rejecting gross outliers. |
-| `odom1_twist_rejection_threshold` | `1.0` | `3.0` | Same reasoning — too tight for GPS-velocity data quality. |
+| `odom1_pose_rejection_threshold` | `2.5` | `5.0` | GPS-derived odometry naturally has multi-metre noise. A threshold of 2.5 is still tight enough to reject many valid corrections, making the global EKF sluggish or effectively blind to GPS. 5.0 allows realistic GPS corrections to pass while still rejecting gross outliers. |
+| `odom1_twist_rejection_threshold` | `1.0` | `3.0` | Same reasoning — 1.0 is too tight for the quality of GPS-derived velocity on this stack. |
 | `imu0_relative` | `true` | `false` | Same reasoning as local EKF. Consistent heading reference across both EKF instances. |
-| `imu0_pose_rejection_threshold` | `20.0` | `5.0` | Same as local EKF. |
+| `imu0_pose_rejection_threshold` | `3.0` | `5.0` | Same as local EKF — keep the IMU gate active, but not so tight that valid yaw updates get dropped. |
 | `imu0_twist_rejection_threshold` | `1.542` | `3.0` | Same as local EKF. |
 | `initial_estimate_covariance` (all diagonals) | `1e-9` | `0.1` | Same as local EKF. |
 

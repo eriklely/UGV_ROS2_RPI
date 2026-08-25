@@ -7,7 +7,7 @@ ekf_filter_node:
     transform_timeout: 0.1
     print_diagnostics: true
     debug: false
-    publish_tf: false
+    publish_tf: true
     publish_acceleration: false
 
     map_frame: map
@@ -17,7 +17,7 @@ ekf_filter_node:
 
     # Wheel/local odometry (trusted for short-term motion)
     odom0: /odom
-    odom0_config: [true,  true,  false,
+    odom0_config: [false, false, false,
                    false, false, false,
                    true,  true,  false,
                    false, false, true,
@@ -26,7 +26,7 @@ ekf_filter_node:
     odom0_nodelay: false
     odom0_differential: false
     odom0_relative: false
-    odom0_pose_rejection_threshold: 3.0
+    odom0_pose_rejection_threshold: 5.0
     odom0_twist_rejection_threshold: 3.0
 
     # GPS odometry from navsat_transform_node (low trust, correction only)
@@ -41,29 +41,11 @@ ekf_filter_node:
     odom1_differential: false
     odom1_relative: false
 
-    # --- Mahalanobis-based outlier rejection ---
-    # These thresholds are expressed as Mahalanobis distances (σ units).
-    # A measurement is accepted only when its normalised innovation is below
-    # the threshold; outliers are silently dropped.
-    #
-    # Tuning guidance:
-    #   odom1_pose_rejection_threshold
-    #     • Open-sky, good RTK/SBAS: raise to 3.0–4.0 to accept more fixes.
-    #     • Urban canyons / tree cover: lower to 1.5–2.0 to gate multipath.
-    #     • Default 2.5 balances responsiveness and resistance to 10–15 m jumps.
-    #
-    #   odom1_twist_rejection_threshold
-    #     • Keep at 1.0 unless your GPS module reports velocity; most do not.
-    #     • If velocity is available and reliable, raise to 2.0–3.0.
-    #
-    # Consecutive-zero / GPS signal loss:
-    #   robot_localization will time-out stale GPS measurements via
-    #   sensor_timeout (currently 0.5 s above). If no new GPS message
-    #   arrives within that window the filter continues propagating on
-    #   odometry + IMU alone — no explicit consecutive-zero logic needed.
-    #   To tighten responsiveness to GPS loss, reduce sensor_timeout to 0.3 s.
-    odom1_pose_rejection_threshold: 2.5
-    odom1_twist_rejection_threshold: 1.0
+    # GPS corrections are noisier than wheel odometry. Keep the outlier gate
+    # active, but wide enough that normal GPS fixes are fused instead of being
+    # rejected almost all the time.
+    odom1_pose_rejection_threshold: 5.0
+    odom1_twist_rejection_threshold: 3.0
 
     # IMU orientation + yaw rate
     imu0: /imu/data
@@ -76,7 +58,7 @@ ekf_filter_node:
     imu0_differential: false
     imu0_relative: false
     imu0_queue_size: 30
-    imu0_pose_rejection_threshold: 3.0
+    imu0_pose_rejection_threshold: 5.0
     imu0_twist_rejection_threshold: 3.0
     imu0_linear_acceleration_rejection_threshold: 3.0
     imu0_remove_gravitational_acceleration: true

@@ -119,7 +119,7 @@ ros2 topic echo /odometry/global --once
 
 ## 7. (Optional) Set a Fixed Datum
 
-Use this step when you need repeatable map-frame coordinates across power cycles.
+Use this step only when you need repeatable map-frame coordinates across power cycles.
 
 ```bash
 # List built-in reference locations
@@ -166,7 +166,7 @@ ros2 topic echo /diagnostics | grep -A 5 "ekf"
 | Pose jumps 10–15 m | GPS outlier accepted | Lower `odom1_pose_rejection_threshold` in `ekf_gps.yaml` |
 | Heading 90° off at world-lock | Wrong `yaw_offset` | Set `yaw_offset` in `navsat_transform_params.yaml` |
 | Heading 180° off | GPS velocity sign inverted | Drive faster (> 0.5 m/s) during init or check GPS module orientation |
-| `/odometry/gps` not publishing | `navsat_transform_node` not converged | Drive straight 2–3 m; check IMU is publishing |
+| `/odometry/gps` not publishing | `navsat_transform_node` not converged | Drive straight 2–3 m; check IMU + odom are publishing |
 | Odometry drifts rapidly indoors | No GPS correction, wheel slip | Enable `use_lidar_odom:=true` for lidar-odom fallback |
 | `TF_OLD_DATA` warnings | System time jump or slow node | Set `reset_on_time_jump: true` in EKF config |
 

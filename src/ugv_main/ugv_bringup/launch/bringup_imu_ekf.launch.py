@@ -150,8 +150,7 @@ def generate_launch_description():
         condition=IfCondition(LaunchConfiguration('use_gps')),
         msg='[bringup_imu_ekf] GPS mode ENABLED — '
             'navsat_transform_node + map-frame EKF active. '
-            'odometry_to_tf_node publishes map->odom TF from /odometry/global. '
-            'Call /datum after launch to set the GPS origin.'
+            'Drive straight briefly to initialise world-lock; no manual datum step required.'
     )
     log_gps_disabled = LogInfo(
         condition=UnlessCondition(LaunchConfiguration('use_gps')),
@@ -159,8 +158,8 @@ def generate_launch_description():
             'running local odom+IMU only. No global position correction.'
     )
 
-    # navsat_transform_node — converts GPS fix to odometry/gps using
-    # use_odometry_yaw (moving-start heading init).
+    # navsat_transform_node — converts GPS fix to odometry/gps.
+    # By default it runs in moving-start mode from the YAML config.
     # If mag_declination argument is non-empty it overrides the YAML value so
     # the operator can test different declination values without editing files.
     navsat_transform_node = Node(
@@ -168,23 +167,35 @@ def generate_launch_description():
         executable='navsat_transform_node',
         name='navsat_transform_node',
         output='screen',
-        condition=IfCondition(LaunchConfiguration('use_gps')),
+        condition=IfCondition(PythonExpression([
+            '"', LaunchConfiguration('use_gps'), '" == "true" and "',
+            LaunchConfiguration('mag_declination'), '" == ""'
+        ])),
+        parameters=[navsat_config],
+        remappings=[
+            ('imu', '/imu/data'),
+            ('gps/fix', '/gps/fix'),
+            ('odometry/filtered', '/odom'),
+            ('odometry/gps', '/odometry/gps'),
+        ]
+    )
+
+    navsat_transform_node_with_declination = Node(
+        package='robot_localization',
+        executable='navsat_transform_node',
+        name='navsat_transform_node',
+        output='screen',
+        condition=IfCondition(PythonExpression([
+            '"', LaunchConfiguration('use_gps'), '" == "true" and "',
+            LaunchConfiguration('mag_declination'), '" != ""'
+        ])),
         parameters=[
             navsat_config,
-            # When mag_declination is provided (non-empty), override the YAML
-            # value at runtime.  PythonExpression evaluates to the supplied
-            # float; when the argument is empty the expression returns the same
-            # value that is already in the YAML file (0.0 default), which is
-            # harmless because the YAML value is loaded first and the dict
-            # below is merged on top.
             {
-                'magnetic_declination_radians': PythonExpression([
-                    'float("',
+                'magnetic_declination_radians': ParameterValue(
                     LaunchConfiguration('mag_declination'),
-                    '") if "',
-                    LaunchConfiguration('mag_declination'),
-                    '" != "" else 0.0'
-                ])
+                    value_type=float,
+                )
             }
         ],
         remappings=[
@@ -196,7 +207,7 @@ def generate_launch_description():
     )
 
     # Global EKF (map frame) — fuses GPS-derived odometry to provide a global
-    # fused odometry output. TF publishing is disabled in ekf_gps.yaml.
+    # fused odometry output and the authoritative map->odom transform.
     ekf_node_map = Node(
         package='robot_localization',
         executable='ekf_node',
@@ -205,23 +216,6 @@ def generate_launch_description():
         condition=IfCondition(LaunchConfiguration('use_gps')),
         parameters=[ekf_gps_config],
         remappings=[('/odometry/filtered', '/odometry/global')]
-    )
-
-    # Odometry-to-TF bridge — publishes the map→odom transform dynamically by
-    # reading the global EKF output (/odometry/global).  Only started when
-    # use_gps:=true.  Keeps ekf_gps.yaml's publish_tf:false so there is no
-    # conflict with AMCL when switching localization modes.
-    odom_to_tf_node = Node(
-        package='ugv_bringup',
-        executable='odometry_to_tf',
-        name='odometry_to_tf_node',
-        output='screen',
-        condition=IfCondition(LaunchConfiguration('use_gps')),
-        parameters=[{
-            'frame_id': 'map',
-            'child_frame_id': 'odom',
-        }],
-        remappings=[('odom', '/odometry/global')]
     )
 
     log_lidar_enabled = LogInfo(
@@ -256,7 +250,6 @@ def generate_launch_description():
         ekf_node,
         ekf_node_lidar,
         navsat_transform_node,
+        navsat_transform_node_with_declination,
         ekf_node_map,
-        odom_to_tf_node,
     ])
-
