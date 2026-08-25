@@ -39,7 +39,17 @@ def launch_setup(context, *args, **kwargs):
     map_yaml_path = LaunchConfiguration('map', default=os.path.join(ugv_nav_dir, 'maps', 'map.yaml'))
     emcl_param_file = os.path.join(emcl_dir, 'config', 'emcl2_quick_start.param.yaml')
 
-    # Nav2 with AMCL — laptop only, no hardware bringup
+    # RViz + robot state publisher (no hardware — laptop only)
+    display_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            os.path.join(get_package_share_directory('ugv_description'), 'launch', 'display.launch.py')
+        ),
+        launch_arguments={
+            'use_rviz': LaunchConfiguration('use_rviz'),
+            'rviz_config': 'nav_2d',
+        }.items()
+    )
+
     nav2_bringup_amcl_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             os.path.join(nav2_bringup_dir, 'launch', 'bringup_launch.py')
@@ -80,6 +90,7 @@ def launch_setup(context, *args, **kwargs):
     )
 
     return [
+        display_launch,
         nav2_bringup_amcl_launch,
         nav2_bringup_emcl_launch,
         emcl_launch,
