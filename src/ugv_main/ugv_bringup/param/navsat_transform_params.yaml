@@ -1,8 +1,34 @@
 ### navsat_transform_node configuration ###
-# Moving-start heading initialization (world-lock via odometry yaw).
-# At boot the global heading is unknown. After driving straight 2-3 m the
-# node derives True-North heading from the GPS displacement vector and snaps
-# the map frame to global ENU orientation automatically.
+# Explicit-datum initialization.
+# The node waits for an explicit /navsat_transform_node/set_datum service call
+# before publishing /odometry/gps.  This guarantees a known, correct map-frame
+# origin and avoids publishing garbage values during startup.
+#
+# Datum initialization workflow
+# ──────────────────────────────
+# 1. Launch the localization stack:
+#      ros2 launch ugv_bringup bringup_imu_ekf.launch.py use_gps:=true
+#
+# 2. Wait for a good GPS fix:
+#      ros2 topic echo /gps/fix --once   # status.status >= 0 = fix acquired
+#
+# 3. Set the datum (locks the map-frame origin to a known lat/lon):
+#      ros2 run ugv_bringup set_datum --lat 52.06298566666667 \
+#                                     --lon 5.114725833333333 \
+#                                     --alt 2.3
+#    Or using the bash helper:
+#      bash set_gps_datum.sh 52.06298566666667 5.114725833333333 2.3
+#    Or via a raw service call:
+#      ros2 service call /navsat_transform_node/set_datum \
+#        robot_localization/srv/SetDatum \
+#        "{latitude: 52.06298566666667, longitude: 5.114725833333333, altitude: 2.3}"
+#
+# 4. Verify — /odometry/gps should now show:
+#      frame_id: map          (was: odom  → wrong)
+#      child_frame_id: odom   (was: ''   → empty)
+#      position: small values near (0, 0)
+#
+# 5. Begin navigation only after step 4 passes.
 navsat_transform_node:
     ros__parameters:
 
@@ -12,23 +38,21 @@ navsat_transform_node:
         # How long to wait (s) before reporting a failure to acquire a datum.
         delay: 3.0
 
-        # Set to true so that the node infers initial heading from the direction
-        # of travel (GPS displacement vector) instead of trusting the IMU/mag
-        # heading at startup.  This is the "moving-start world-lock" method.
-        use_odometry_yaw: true
+        # Use an explicit /set_datum service call instead of auto-deriving the
+        # heading from robot movement.  This prevents garbage /odometry/gps
+        # output during the initialization phase.
+        use_odometry_yaw: false
 
-        # Do NOT wait for an explicit datum service call; let the node derive the
-        # datum automatically once GPS + odometry are available and the robot has
-        # moved far enough for a reliable heading estimate.
-        wait_for_datum: false
+        # Wait for an explicit /navsat_transform_node/set_datum service call
+        # before publishing /odometry/gps.  This is the recommended mode for
+        # outdoor operations where a known origin is required.
+        wait_for_datum: true
 
         # Magnetic declination for your location (radians).
-        # With use_odometry_yaw: true this value is not used for moving-start
-        # heading init, but it IS applied if you ever switch to magnetometer mode.
-        # Set it correctly for your deployment region so the config is portable.
+        # Applied to align the GPS-derived heading with True North.
         #
         # Calibration reference (approximate regional values):
-        #   Netherlands / Western Europe : +0.0349  (~2° E, varies by location)
+        #   Netherlands / Western Europe : +0.1047  (~6° E, 52°N 5°E — 2026)
         #   Eastern US (e.g. New York)   : -0.2182  (~-12.5° W)
         #   Western US (e.g. California) : +0.2269  (~13° E)
         #   Central Europe (Germany)     : +0.0698  (~4° E)
@@ -41,8 +65,8 @@ navsat_transform_node:
         #
         # Override at runtime without editing this file:
         #   ros2 launch ugv_bringup bringup_imu_ekf.launch.py \
-        #       use_gps:=true mag_declination:=0.0349
-        magnetic_declination_radians: 0.0486   # 2° 47' E  (Utrecht, NL — 2026-08-25)
+        #       use_gps:=true mag_declination:=0.1047
+        magnetic_declination_radians: 0.1047   # ~6° E  (Netherlands, 52°N 5°E)
 
         # Yaw offset applied to the converted GPS odometry (radians).
         # Set to 0.0; any fixed offset should be calibrated in the field.
@@ -59,5 +83,6 @@ navsat_transform_node:
         # Publish UTM->map transform as child->parent (false = standard).
         broadcast_utm_transform_as_parent_frame: false
 
-        # If true the node publishes a filtered GPS position for diagnostics.
-        publish_filtered_gps: false
+        # Publish a filtered GPS position topic for diagnostics.
+        # Useful for verifying that the datum was set correctly.
+        publish_filtered_gps: true
