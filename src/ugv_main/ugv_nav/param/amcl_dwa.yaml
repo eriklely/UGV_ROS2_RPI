@@ -14,8 +14,8 @@ amcl:
     global_frame_id: "map"
     lambda_short: 0.1
     laser_likelihood_max_dist: 2.0
-    laser_max_range: 12.0
-    laser_min_range: 0.02
+    laser_max_range: 100.0
+    laser_min_range: -1.0
     laser_model_type: "likelihood_field"
     max_beams: 60
     max_particles: 2000
@@ -111,7 +111,7 @@ bt_navigator_rclcpp_node:
 controller_server:
   ros__parameters:
     use_sim_time: False
-    controller_frequency: 10.0
+    controller_frequency: 20.0
     min_x_velocity_threshold: 0.001
     min_y_velocity_threshold: 0.5
     min_theta_velocity_threshold: 0.001
@@ -189,7 +189,7 @@ controller_server:
 local_costmap:
   local_costmap:
     ros__parameters:
-      update_frequency: 7.0
+      update_frequency: 5.0
       publish_frequency: 2.0
       global_frame: odom
       robot_base_frame: base_link
@@ -197,7 +197,7 @@ local_costmap:
       rolling_window: true
       width: 5
       height: 5
-      resolution: 0.025
+      resolution: 0.05
       robot_radius: 0.1
       plugins: ["obstacle_layer", "inflation_layer"]
       inflation_layer:
@@ -233,7 +233,7 @@ global_costmap:
       robot_base_frame: base_link
       use_sim_time: False
       robot_radius: 0.1
-      resolution: 0.025
+      resolution: 0.05
       track_unknown_space: true
       plugins: ["static_layer","obstacle_layer","inflation_layer"]
       obstacle_layer:
@@ -275,7 +275,7 @@ map_saver:
 
 planner_server:
   ros__parameters:
-    expected_planner_frequency: 10.0
+    expected_planner_frequency: 20.0
     use_sim_time: False
     planner_plugins: ["GridBased"]
     GridBased:
@@ -315,7 +315,7 @@ behavior_server:
     simulate_ahead_time: 2.0
     max_rotational_vel: 1.0
     min_rotational_vel: 0.4
-    rotational_acc_lim: 0.05
+    rotational_acc_lim: 3.2
     
 robot_state_publisher:
   ros__parameters:
@@ -335,7 +335,7 @@ waypoint_follower:
 velocity_smoother:
   ros__parameters:
     use_sim_time: False
-    smoothing_frequency: 10.0
+    smoothing_frequency: 20.0
     scale_velocities: False
     feedback: "OPEN_LOOP"
     max_velocity: [0.26, 0.0, 1.0]

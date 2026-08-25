@@ -3,7 +3,6 @@
 # ugv_mode_launcher.sh
 # Clean unified menu launcher for UGV ROS2 modes
 # Ubuntu 22.04 (Raspberry Pi / Laptop / Desktop)
-# Fixed: GPS Mode no longer starts AMCL
 # ============================================================
 
 set -e
@@ -48,198 +47,105 @@ read -rp "Select machine [1-3] (default 1): " mchoice
 case $mchoice in
     2) MACHINE="rpi" ;;
     3) MACHINE="laptop" ;;
-    *) ;; 
+    *) ;;
 esac
 
 echo
 echo -e "Running as: ${GREEN}${MACHINE}${NC}"
 sleep 1
 
-# ============================================================
-# Main Menu
-# ============================================================
 while true; do
     print_header
     echo -e "Machine: ${GREEN}${MACHINE}${NC}"
     echo
-    echo -e "${BLUE}=== 1. NAVIGATION ===${NC}"
-    echo "  1A) GPS Mode          (Outdoor, No Pre-Made Map)  ← NO AMCL"
-    echo "  1B) AMCL Mode         (Indoor, Pre-Mapped)"
+    echo -e "${BLUE}=== RPI MODES ===${NC}"
+    echo "  1) Bringup Lidar only     → ros2 launch ugv_bringup bringup_lidar.launch.py use_rviz:=false"
+    echo "  2) Bringup IMU + EKF      → ros2 launch ugv_bringup bringup_imu_ekf.launch.py use_rviz:=false"
+    echo "     (NOTE: use option 2 instead of 1 if you want IMU/EKF fused odometry)"
     echo
-    echo -e "${BLUE}=== 2. MAPPING (Gmapping) ===${NC}"
-    echo "  2A) Gmapping WITHOUT GPS"
-    echo "  2B) Gmapping WITH GPS"
+    echo -e "${BLUE}=== LAPTOP / STANDALONE MODES ===${NC}"
+    echo "  3) Gmapping SLAM          → ros2 launch ugv_slam gmapping.launch.py use_rviz:=true"
+    echo "  4) Cartographer SLAM      → ros2 launch ugv_slam cartographer.launch.py use_rviz:=true"
+    echo "  5) Navigation AMCL/TEB    → ros2 launch ugv_nav nav.launch.py use_rviz:=true use_localization:=amcl use_localplan:=teb"
+    echo "  6) Navigation AMCL/DWA    → ros2 launch ugv_nav nav.launch.py use_rviz:=true use_localization:=amcl use_localplan:=dwa"
+    echo "  7) Navigation EMCL/TEB    → ros2 launch ugv_nav nav.launch.py use_rviz:=true use_localization:=emcl use_localplan:=teb"
+    echo "  8) RTABMAP RGB-D          → ros2 launch ugv_slam rtabmap_rgbd.launch.py use_rviz:=true"
     echo
-    echo -e "${BLUE}=== 3. SLAM (Cartographer) ===${NC}"
-    echo "  3A) Cartographer WITHOUT GPS"
-    echo "  3B) Cartographer WITH GPS"
-    echo
-    echo -e "${BLUE}=== 4. RTABMAP (3D SLAM) ===${NC}"
-    echo "  4A) RTABMAP WITHOUT GPS"
+    echo -e "${CYAN}GPS/Vizanti note:${NC} GPS remains available separately. For aerial map use, run Vizanti independently"
+    echo "(it reads /gps/fix directly; no nav/slam integration needed)."
     echo
     echo "  Q) Quit"
     echo
     read -rp "Select mode: " choice
 
     case $choice in
-
-        # --------------------------------------------------
-        # 1A. GPS Mode  (NO AMCL)
-        # --------------------------------------------------
-        1A|1a)
+        1)
             print_header
-            echo -e "${GREEN}>>> GPS Mode (Outdoor, No Pre-Made Map) - NO AMCL${NC}"
-            if [ "$MACHINE" = "rpi" ]; then
-                echo -e "${YELLOW}RPI: Starting odometry + GPS EKF...${NC}"
-                echo "Command: ros2 launch ugv_bringup bringup_imu_ekf.launch.py use_gps:=true use_rviz:=false"
-                echo
-                ros2 launch ugv_bringup bringup_imu_ekf.launch.py use_gps:=true use_rviz:=false
-            else
-                echo -e "${YELLOW}Laptop: Nav2 with GPS (NO AMCL)...${NC}"
-                echo "Command: ros2 launch ugv_nav nav.launch.py standalone:=false use_gps:=true use_rviz:=true"
-                echo
-                ros2 launch ugv_nav nav.launch.py standalone:=false use_gps:=true use_rviz:=true
-            fi
+            echo -e "${GREEN}>>> Bringup Lidar only${NC}"
+            echo "Command: ros2 launch ugv_bringup bringup_lidar.launch.py use_rviz:=false"
+            ros2 launch ugv_bringup bringup_lidar.launch.py use_rviz:=false
             ;;
-
-        # --------------------------------------------------
-        # 1B. AMCL Mode
-        # --------------------------------------------------
-        1B|1b)
+        2)
             print_header
-            echo -e "${GREEN}>>> AMCL Mode (Indoor, Pre-Mapped)${NC}"
-            if [ "$MACHINE" = "rpi" ]; then
-                echo -e "${YELLOW}RPI: Starting odometry (NO GPS)...${NC}"
-                echo "Command: ros2 launch ugv_bringup bringup_imu_ekf.launch.py use_gps:=false use_rviz:=false"
-                echo
-                ros2 launch ugv_bringup bringup_imu_ekf.launch.py use_gps:=false use_rviz:=false
-            else
-                echo -e "${YELLOW}Laptop: Nav2 with AMCL (no GPS)...${NC}"
-                echo "Command: ros2 launch ugv_nav nav.launch.py standalone:=false use_gps:=false use_localization:=amcl use_rviz:=true"
-                echo
-                ros2 launch ugv_nav nav.launch.py standalone:=false use_gps:=false use_localization:=amcl use_rviz:=true
-            fi
+            echo -e "${GREEN}>>> Bringup IMU + EKF${NC}"
+            echo "Command: ros2 launch ugv_bringup bringup_imu_ekf.launch.py use_rviz:=false"
+            ros2 launch ugv_bringup bringup_imu_ekf.launch.py use_rviz:=false
             ;;
-
-        # --------------------------------------------------
-        # 2A. Gmapping WITHOUT GPS
-        # --------------------------------------------------
-        2A|2a)
+        3)
             print_header
-            echo -e "${GREEN}>>> Gmapping WITHOUT GPS${NC}"
-            if [ "$MACHINE" = "rpi" ]; then
-                echo -e "${YELLOW}RPI: Starting odometry (no GPS)...${NC}"
-                echo "Command: ros2 launch ugv_bringup bringup_imu_ekf.launch.py use_gps:=false use_rviz:=false"
-                echo
-                ros2 launch ugv_bringup bringup_imu_ekf.launch.py use_gps:=false use_rviz:=false
-            else
-                echo -e "${YELLOW}Laptop: Starting Gmapping...${NC}"
-                echo "Command: ros2 launch ugv_slam gmapping.launch.py standalone:=false use_rviz:=true"
-                echo
-                echo -e "${CYAN}>>> SECOND terminal (manual driving):${NC}"
-                echo "    ros2 run ugv_tools keyboard_ctrl"
-                echo
-                echo -e "${CYAN}>>> When finished, save map:${NC}"
-                echo "    cd /home/ws/ugv_ws/src/ugv_main/ugv_nav/maps"
-                echo "    ros2 run nav2_map_server map_saver_cli -f ./map"
-                echo
-                ros2 launch ugv_slam gmapping.launch.py standalone:=false use_gps:=false use_rviz:=true
-            fi
+            echo -e "${GREEN}>>> Gmapping SLAM${NC}"
+            echo "Command: ros2 launch ugv_slam gmapping.launch.py use_rviz:=true"
+            echo
+            echo -e "${CYAN}>>> SECOND terminal (manual driving):${NC}"
+            echo "    ros2 run ugv_tools keyboard_ctrl"
+            echo
+            echo -e "${CYAN}>>> When finished, save map:${NC}"
+            echo "    cd /home/ws/ugv_ws/src/ugv_main/ugv_nav/maps"
+            echo "    ros2 run nav2_map_server map_saver_cli -f ./map"
+            echo
+            ros2 launch ugv_slam gmapping.launch.py use_rviz:=true
             ;;
-
-        # --------------------------------------------------
-        # 2B. Gmapping WITH GPS
-        # --------------------------------------------------
-        2B|2b)
+        4)
             print_header
-            echo -e "${GREEN}>>> Gmapping WITH GPS${NC}"
-            if [ "$MACHINE" = "rpi" ]; then
-                echo -e "${YELLOW}RPI: Starting odometry + GPS EKF...${NC}"
-                echo "Command: ros2 launch ugv_bringup bringup_imu_ekf.launch.py use_gps:=true use_rviz:=false"
-                echo
-                ros2 launch ugv_bringup bringup_imu_ekf.launch.py use_gps:=true use_rviz:=false
-            else
-                echo -e "${YELLOW}Laptop: Gmapping + GPS...${NC}"
-                echo "Command: ros2 launch ugv_slam gmapping.launch.py standalone:=false use_gps:=true use_rviz:=true"
-                echo
-                echo -e "${CYAN}>>> SECOND terminal (manual driving):${NC}"
-                echo "    ros2 run ugv_tools keyboard_ctrl"
-                echo
-                ros2 launch ugv_slam gmapping.launch.py standalone:=false use_gps:=true use_rviz:=true
-            fi
+            echo -e "${GREEN}>>> Cartographer SLAM${NC}"
+            echo "Command: ros2 launch ugv_slam cartographer.launch.py use_rviz:=true"
+            echo
+            echo -e "${CYAN}>>> SECOND terminal (manual driving):${NC}"
+            echo "    ros2 run ugv_tools keyboard_ctrl"
+            echo
+            echo -e "${CYAN}>>> When finished, save map:${NC}"
+            echo "    ros2 run nav2_map_server map_saver_cli -f ./map"
+            echo
+            ros2 launch ugv_slam cartographer.launch.py use_rviz:=true
             ;;
-
-        # --------------------------------------------------
-        # 3A. Cartographer WITHOUT GPS
-        # --------------------------------------------------
-        3A|3a)
+        5)
             print_header
-            echo -e "${GREEN}>>> Cartographer WITHOUT GPS${NC}"
-            if [ "$MACHINE" = "rpi" ]; then
-                echo -e "${YELLOW}RPI: Starting odometry (no GPS)...${NC}"
-                echo "Command: ros2 launch ugv_bringup bringup_imu_ekf.launch.py use_gps:=false use_rviz:=false"
-                echo
-                ros2 launch ugv_bringup bringup_imu_ekf.launch.py use_gps:=false use_rviz:=false
-            else
-                echo -e "${YELLOW}Laptop: Starting Cartographer...${NC}"
-                echo "Command: ros2 launch ugv_slam cartographer.launch.py use_rviz:=true"
-                echo
-                echo -e "${CYAN}>>> SECOND terminal (manual driving):${NC}"
-                echo "    ros2 run ugv_tools keyboard_ctrl"
-                echo
-                ros2 launch ugv_slam cartographer.launch.py standalone:=false use_gps:=false use_rviz:=true
-            fi
+            echo -e "${GREEN}>>> Navigation AMCL/TEB${NC}"
+            echo "Command: ros2 launch ugv_nav nav.launch.py use_rviz:=true use_localization:=amcl use_localplan:=teb"
+            ros2 launch ugv_nav nav.launch.py use_rviz:=true use_localization:=amcl use_localplan:=teb
             ;;
-
-        # --------------------------------------------------
-        # 3B. Cartographer WITH GPS
-        # --------------------------------------------------
-        3B|3b)
+        6)
             print_header
-            echo -e "${GREEN}>>> Cartographer WITH GPS${NC}"
-            if [ "$MACHINE" = "rpi" ]; then
-                echo -e "${YELLOW}RPI: Starting odometry + GPS EKF...${NC}"
-                echo "Command: ros2 launch ugv_bringup bringup_imu_ekf.launch.py use_gps:=true use_rviz:=false"
-                echo
-                ros2 launch ugv_bringup bringup_imu_ekf.launch.py use_gps:=true use_rviz:=false
-            else
-                echo -e "${YELLOW}Laptop: Starting Cartographer + GPS...${NC}"
-                echo "Command: ros2 launch ugv_slam cartographer.launch.py use_gps:=true use_rviz:=true"
-                echo
-                echo -e "${CYAN}>>> SECOND terminal (manual driving):${NC}"
-                echo "    ros2 run ugv_tools keyboard_ctrl"
-                echo
-                ros2 launch ugv_slam cartographer.launch.py standalone:=false use_gps:=true use_rviz:=true
-            fi
+            echo -e "${GREEN}>>> Navigation AMCL/DWA${NC}"
+            echo "Command: ros2 launch ugv_nav nav.launch.py use_rviz:=true use_localization:=amcl use_localplan:=dwa"
+            ros2 launch ugv_nav nav.launch.py use_rviz:=true use_localization:=amcl use_localplan:=dwa
             ;;
-
-        # --------------------------------------------------
-        # 4A. RTABMAP WITHOUT GPS
-        # --------------------------------------------------
-        4A|4a)
+        7)
             print_header
-            echo -e "${GREEN}>>> RTABMAP WITHOUT GPS${NC}"
-            if [ "$MACHINE" = "rpi" ]; then
-                echo -e "${YELLOW}RPI: Starting odometry (no GPS)...${NC}"
-                echo "Command: ros2 launch ugv_bringup bringup_imu_ekf.launch.py use_gps:=false use_rviz:=false"
-                echo
-                ros2 launch ugv_bringup bringup_imu_ekf.launch.py use_gps:=false use_rviz:=false
-            else
-                echo -e "${YELLOW}Laptop: Starting RTABMAP RGB-D...${NC}"
-                echo "Command: ros2 launch ugv_slam rtabmap_rgbd.launch.py use_rviz:=true"
-                echo
-                ros2 launch ugv_slam rtabmap_rgbd.launch.py standalone:=false use_rviz:=true
-            fi
+            echo -e "${GREEN}>>> Navigation EMCL/TEB${NC}"
+            echo "Command: ros2 launch ugv_nav nav.launch.py use_rviz:=true use_localization:=emcl use_localplan:=teb"
+            ros2 launch ugv_nav nav.launch.py use_rviz:=true use_localization:=emcl use_localplan:=teb
             ;;
-
-        # --------------------------------------------------
-        # Quit
-        # --------------------------------------------------
+        8)
+            print_header
+            echo -e "${GREEN}>>> RTABMAP RGB-D${NC}"
+            echo "Command: ros2 launch ugv_slam rtabmap_rgbd.launch.py use_rviz:=true"
+            ros2 launch ugv_slam rtabmap_rgbd.launch.py use_rviz:=true
+            ;;
         Q|q)
             echo -e "${GREEN}Exiting. Goodbye!${NC}"
             exit 0
             ;;
-
         *)
             echo -e "${RED}Invalid choice. Try again.${NC}"
             sleep 1.5
