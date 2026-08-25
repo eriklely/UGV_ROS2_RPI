@@ -143,7 +143,7 @@ while true; do
                 echo "    cd /home/ws/ugv_ws/src/ugv_main/ugv_nav/maps"
                 echo "    ros2 run nav2_map_server map_saver_cli -f ./map"
                 echo
-                ros2 launch ugv_slam gmapping.launch.py standalone:=false use_rviz:=true
+                ros2 launch ugv_slam gmapping.launch.py standalone:=false use_gps:=false use_rviz:=true
             fi
             ;;
 
@@ -187,7 +187,7 @@ while true; do
                 echo -e "${CYAN}>>> SECOND terminal (manual driving):${NC}"
                 echo "    ros2 run ugv_tools keyboard_ctrl"
                 echo
-                ros2 launch ugv_slam cartographer.launch.py use_rviz:=true
+                ros2 launch ugv_slam cartographer.launch.py standalone:=false use_gps:=false use_rviz:=true
             fi
             ;;
 
@@ -209,7 +209,7 @@ while true; do
                 echo -e "${CYAN}>>> SECOND terminal (manual driving):${NC}"
                 echo "    ros2 run ugv_tools keyboard_ctrl"
                 echo
-                ros2 launch ugv_slam cartographer.launch.py use_gps:=true use_rviz:=true
+                ros2 launch ugv_slam cartographer.launch.py standalone:=false use_gps:=true use_rviz:=true
             fi
             ;;
 
@@ -228,7 +228,7 @@ while true; do
                 echo -e "${YELLOW}Laptop: Starting RTABMAP RGB-D...${NC}"
                 echo "Command: ros2 launch ugv_slam rtabmap_rgbd.launch.py use_rviz:=true"
                 echo
-                ros2 launch ugv_slam rtabmap_rgbd.launch.py use_rviz:=true
+                ros2 launch ugv_slam rtabmap_rgbd.launch.py standalone:=false use_rviz:=true
             fi
             ;;
 
