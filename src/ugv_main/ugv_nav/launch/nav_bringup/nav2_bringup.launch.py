@@ -33,7 +33,7 @@ def generate_launch_description():
     bringup_dir = get_package_share_directory('nav2_bringup')
     launch_dir = os.path.join(bringup_dir, 'launch')
 
-    ugv_bringup_dir = get_package_share_directory('ugv_gazebo')
+    ugv_bringup_dir = get_package_share_directory('ugv_nav')
     ugv_launch_dir = os.path.join(ugv_bringup_dir, 'launch/nav_bringup')
     
     # Create the launch configuration variables
