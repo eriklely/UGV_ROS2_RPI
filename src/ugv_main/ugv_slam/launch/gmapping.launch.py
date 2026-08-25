@@ -6,7 +6,7 @@ from launch.launch_description_sources import PythonLaunchDescriptionSource
 from ament_index_python.packages import get_package_share_directory
 from launch.conditions import IfCondition
 from launch.actions import DeclareLaunchArgument
-from launch.substitutions import Command, LaunchConfiguration
+from launch.substitutions import Command, LaunchConfiguration, PythonExpression
 
 # Function to generate launch description
 def generate_launch_description():
@@ -60,6 +60,20 @@ def generate_launch_description():
         condition=IfCondition(LaunchConfiguration('standalone'))
     )
     
+    # In non-standalone mode, bringup_lidar is skipped so RViz must be launched
+    # here directly when the user requests it.
+    rviz_node = Node(
+        package='rviz2',
+        executable='rviz2',
+        name='rviz2',
+        output='screen',
+        arguments=['-d', os.path.join(get_package_share_directory('ugv_slam'), 'rviz', 'view_slam_2d.rviz')],
+        condition=IfCondition(PythonExpression([
+            "'", LaunchConfiguration('use_rviz'), "' == 'true'",
+            " and '", LaunchConfiguration('standalone'), "' == 'false'"
+        ]))
+    )
+
     # Include launch description for mapping.launch.py
     gmapping_launch = IncludeLaunchDescription(PythonLaunchDescriptionSource(
         [os.path.join(get_package_share_directory('slam_gmapping'), 'launch'),
@@ -78,7 +92,8 @@ def generate_launch_description():
         standalone_arg,
         use_gps_arg,
         log_gps_conflict,
-        bringup_lidar_launch, 
+        bringup_lidar_launch,
+        rviz_node,
         robot_pose_publisher_launch,
         gmapping_launch
     ])
