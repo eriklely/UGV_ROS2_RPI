@@ -1,5 +1,6 @@
 #!/bin/bash
 
+# Function to start the container
 enter_container() {
     if find / -name "ugv_jetson" 2>/dev/null | grep -q "ugv_jetson"; then
         container_name="ugv_jetson_ros_humble"
@@ -22,5 +23,5 @@ enter_container() {
         echo "Failed to enter the container, please check the error."
     fi
 }
-
+# Call the function
 enter_container

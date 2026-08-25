@@ -1,5 +1,6 @@
 import os
 
+# Import the necessary modules from the ament_index_python package
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
@@ -11,6 +12,7 @@ from launch_ros.descriptions import ComposableNode
 
 def generate_launch_description():
 
+    # Get the package directory for the ugv_vision package
     pkg_dir = get_package_share_directory('ugv_vision')
     param_file = os.path.join(pkg_dir, 'config', 'params.yaml')
 
