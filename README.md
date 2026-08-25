@@ -1119,14 +1119,13 @@ The `bringup_imu_ekf.launch.py` launch file supports two localization modes:
 
 ---
 
-### A. GPS-Enabled Mode — Explicit Datum Initialization
+### A. GPS-Enabled Mode — Moving-Start Initialization
 
-`navsat_transform_node` is configured with `wait_for_datum: true`.  The node will **not**
-publish `/odometry/gps` until you call the `/navsat_transform_node/set_datum` service.
-This guarantees a known, correct map-frame origin and prevents garbage position values
-during startup.
+`navsat_transform_node` now starts in moving-start mode. It auto-initialises from the
+first valid GPS fix and the local odometry heading, so you do **not** need to call
+`/navsat_transform_node/set_datum` for normal GPS bringup.
 
-#### Expected `/odometry/gps` after datum is set
+#### Expected `/odometry/gps` after world-lock
 
 ```yaml
 frame_id: map          # correct — was "odom" before datum
@@ -1152,35 +1151,16 @@ Follow these steps **every time** you start the localization stack with GPS:
    Ensure `status.status >= 0` (fix acquired).  Moving to open sky and waiting
    30–60 s for the fix to stabilise is recommended.
 
-3. **Set the datum** — lock the map-frame origin to a known lat/lon:
-
-   **Option A — Python helper (recommended):**
-   ```bash
-   ros2 run ugv_bringup set_datum --lat 52.06298566666667 \
-                                  --lon 5.114725833333333 \
-                                  --alt 2.3
-   ```
-
-   **Option B — Bash helper script:**
-   ```bash
-   bash set_gps_datum.sh 52.06298566666667 5.114725833333333 2.3
-   ```
-
-   **Option C — Raw service call:**
-   ```bash
-   ros2 service call /navsat_transform_node/set_datum \
-     robot_localization/srv/SetDatum \
-     "{latitude: 52.06298566666667, longitude: 5.114725833333333, altitude: 2.3}"
-   ```
+3. **Drive straight 2–3 m** to let navsat establish heading and world-lock.
 
 4. **Verify `/odometry/gps`:**
    ```bash
    ros2 topic echo /odometry/gps --once
    ```
    Check that:
-   - `frame_id` is `map` (not `odom`)
-   - `child_frame_id` is `odom` (not empty)
-   - `position.x` and `position.y` are small values (near zero)
+   - `frame_id` is `map`
+   - `child_frame_id` is `odom`
+   - `position.x` and `position.y` change consistently with the direction of travel
 
 5. **Launch Nav2 (Laptop/Desktop):**
    ```bash
@@ -1193,11 +1173,11 @@ Follow these steps **every time** you start the localization stack with GPS:
 
 | Symptom | Cause | Fix |
 |---------|-------|-----|
-| `frame_id: odom` (wrong) | Datum not set yet | Call `set_datum` service (step 3) |
-| `child_frame_id: ''` (empty) | Datum not set yet | Call `set_datum` service (step 3) |
-| Large position values (e.g. x: 5.9, y: 15.1) | Datum not set yet | Call `set_datum` service (step 3) |
+| `frame_id: odom` (wrong) | navsat has not world-locked yet | Keep driving straight briefly and verify IMU + odom are active |
+| `child_frame_id: ''` (empty) | navsat has not world-locked yet | Keep driving straight briefly and verify IMU + odom are active |
+| Large position jumps during startup | navsat heading not initialised yet | Keep motion smooth during the first 2–3 m |
 | Service not available | `bringup_imu_ekf` not running | Start with `use_gps:=true` first |
-| Position drifts after datum | Poor GPS signal | Move to open sky, re-set datum |
+| Position drifts after world-lock | Poor GPS signal | Move to open sky and re-initialise |
 
 ---
 
@@ -1242,8 +1222,8 @@ The terminal will print:
 |------|---------|
 | `param/ekf.yaml` | Local EKF — odom frame (always active) |
 | `param/ekf_gps.yaml` | Global EKF — map frame (GPS mode only) |
-| `param/navsat_transform_params.yaml` | navsat_transform_node — explicit datum mode |
+| `param/navsat_transform_params.yaml` | navsat_transform_node — moving-start mode |
 
-To adjust the magnetic declination for your location, edit
-`param/navsat_transform_params.yaml` and set `magnetic_declination_radians`.
-The current value (`0.1047` rad ≈ 6° E) is calibrated for the Netherlands (52°N, 5°E).
+To override the magnetic declination for a heading-source experiment without changing the
+launch command, pass `mag_declination:=<radians>` to
+`bringup_imu_ekf.launch.py`.

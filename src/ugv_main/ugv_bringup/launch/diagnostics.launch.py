@@ -98,7 +98,7 @@ def generate_launch_description():
             '# 5. Check EKF diagnostics:\n'
             '     ros2 topic echo /diagnostics\n'
             '\n'
-            '# 6. Set datum to a known location:\n'
+            '# 6. Optional fixed-datum workflow (not required for normal GPS startup):\n'
             '     ros2 run ugv_bringup set_datum --list\n'
             '     ros2 run ugv_bringup set_datum --lat 52.3676 --lon 4.9041\n'
             '========================================='
