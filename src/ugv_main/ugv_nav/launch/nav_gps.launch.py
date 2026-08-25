@@ -1,7 +1,6 @@
 import os
 from launch import LaunchDescription
 from launch.substitutions import LaunchConfiguration
-from launch_ros.actions import Node
 from ament_index_python.packages import get_package_share_directory
 from launch.actions import DeclareLaunchArgument, OpaqueFunction
 from launch.conditions import LaunchConfigurationEquals
@@ -89,23 +88,12 @@ def launch_setup(context, *args, **kwargs):
         )
     )
 
-    # Relay /odometry/global to /odom so Nav2 uses GPS-fused pose
-    odom_relay_node = Node(
-        package='topic_tools',
-        executable='relay',
-        name='odom_global_relay',
-        output='screen',
-        arguments=['/odometry/global', '/odom'],
-        remappings=[]
-    )
-
     return [
         bringup_lidar_launch,
         nav2_bringup_amcl_launch,
         nav2_bringup_emcl_launch,
         emcl_launch,
         robot_pose_publisher_launch,
-        odom_relay_node,
     ]
 
 

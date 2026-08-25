@@ -8,21 +8,18 @@ from ament_index_python.packages import get_package_share_directory
 
 
 def generate_launch_description():
-    ugv_bringup_dir = get_package_share_directory('ugv_bringup')
     ugv_nav_dir = get_package_share_directory('ugv_nav')
 
-    bringup_gps_ekf_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            os.path.join(ugv_bringup_dir, 'launch', 'bringup_gps_ekf.launch.py')
-        ),
-        launch_arguments={'use_rviz': 'false'}.items()
+    use_rviz_arg = DeclareLaunchArgument(
+        'use_rviz', default_value='true',
+        description='Whether to launch RViz2'
     )
 
     nav_gps_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             os.path.join(ugv_nav_dir, 'launch', 'nav_gps.launch.py')
         ),
-        launch_arguments={'use_rviz': 'true'}.items()
+        launch_arguments={'use_rviz': LaunchConfiguration('use_rviz')}.items()
     )
 
     waypoints_file = os.path.join(ugv_nav_dir, 'config', 'gps_waypoints_example.yaml')
@@ -36,7 +33,7 @@ def generate_launch_description():
     )
 
     return LaunchDescription([
-        bringup_gps_ekf_launch,
+        use_rviz_arg,
         nav_gps_launch,
         gps_waypoint_follower_node,
     ])
