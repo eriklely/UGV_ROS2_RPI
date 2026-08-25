@@ -42,7 +42,7 @@ navsat_transform_node:
         # Override at runtime without editing this file:
         #   ros2 launch ugv_bringup bringup_imu_ekf.launch.py \
         #       use_gps:=true mag_declination:=0.0349
-        magnetic_declination_radians: 0.0
+        magnetic_declination_radians: 0.0486   # 2° 47' E  (Utrecht, NL — 2026-08-25)
 
         # Yaw offset applied to the converted GPS odometry (radians).
         # Set to 0.0; any fixed offset should be calibrated in the field.
