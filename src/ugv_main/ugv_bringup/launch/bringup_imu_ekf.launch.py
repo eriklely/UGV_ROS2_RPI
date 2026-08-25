@@ -149,8 +149,9 @@ def generate_launch_description():
     log_gps_enabled = LogInfo(
         condition=IfCondition(LaunchConfiguration('use_gps')),
         msg='[bringup_imu_ekf] GPS mode ENABLED — '
-            'navsat_transform_node + map-frame EKF are active (map->odom TF is not published by ekf_gps). '
-            'Drive straight 2-3 m after launch to initialise heading (world-lock).'
+            'navsat_transform_node + map-frame EKF active. '
+            'odometry_to_tf_node publishes map->odom TF from /odometry/global. '
+            'Call /datum after launch to set the GPS origin.'
     )
     log_gps_disabled = LogInfo(
         condition=UnlessCondition(LaunchConfiguration('use_gps')),
@@ -206,6 +207,23 @@ def generate_launch_description():
         remappings=[('/odometry/filtered', '/odometry/global')]
     )
 
+    # Odometry-to-TF bridge — publishes the map→odom transform dynamically by
+    # reading the global EKF output (/odometry/global).  Only started when
+    # use_gps:=true.  Keeps ekf_gps.yaml's publish_tf:false so there is no
+    # conflict with AMCL when switching localization modes.
+    odom_to_tf_node = Node(
+        package='ugv_bringup',
+        executable='odometry_to_tf',
+        name='odometry_to_tf_node',
+        output='screen',
+        condition=IfCondition(LaunchConfiguration('use_gps')),
+        parameters=[{
+            'frame_id': 'map',
+            'child_frame_id': 'odom',
+        }],
+        remappings=[('odom', '/odometry/global')]
+    )
+
     log_lidar_enabled = LogInfo(
         condition=IfCondition(LaunchConfiguration('use_lidar_odom')),
         msg='[bringup_imu_ekf] Lidar odometry mode ENABLED — '
@@ -239,5 +257,6 @@ def generate_launch_description():
         ekf_node_lidar,
         navsat_transform_node,
         ekf_node_map,
+        odom_to_tf_node,
     ])
 

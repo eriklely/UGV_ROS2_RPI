@@ -28,6 +28,7 @@ setup(
             'ugv_bringup = ugv_bringup.ugv_bringup:main',
             'ugv_driver = ugv_bringup.ugv_driver:main',
             'set_datum = ugv_bringup.set_datum:main',
+            'odometry_to_tf = ugv_bringup.odom_to_tf:main',
         ],
     },
 )
