@@ -14,8 +14,8 @@ amcl:
     global_frame_id: "map"
     lambda_short: 0.1
     laser_likelihood_max_dist: 2.0
-    laser_max_range: 12.0
-    laser_min_range: 0.02
+    laser_max_range: 100.0
+    laser_min_range: -1.0
     laser_model_type: "likelihood_field"
     max_beams: 60
     max_particles: 2000
@@ -111,7 +111,7 @@ bt_navigator_rclcpp_node:
 controller_server:
   ros__parameters:
     use_sim_time: False
-    controller_frequency: 10.0
+    ontroller_frequency: 20.0
     min_x_velocity_threshold: 0.001
     min_y_velocity_threshold: 0.5
     min_theta_velocity_threshold: 0.001
@@ -135,7 +135,7 @@ controller_server:
       primary_controller: "teb_local_planner::TebLocalPlannerROS"
       angular_dist_threshold: 0.785
       forward_sampling_distance: 0.5
-      rotate_to_heading_angular_vel: 2.5
+      rotate_to_heading_angular_vel: 1.8
       max_angular_accel: 3.2
       simulate_ahead_time: 1.0
       footprint_model.type: circular
@@ -154,19 +154,14 @@ controller_server:
       max_global_plan_lookahead_dist: 1.0
       visualize_hc_graph: True
       max_vel_x: 0.26
-      max_vel_theta: 1.5
+      max_vel_theta: 1.0
       acc_lim_x: 2.5
-      acc_lim_theta: 4.0
-      weight_kinematics_nh: 1000.0
-      weight_optimaltime: 1.0
-      weight_shortest_path: 0.0
-      dt_ref: 0.3
-      dt_hysteresis: 0.1
+      acc_lim_theta: 3.2
 
 local_costmap:
   local_costmap:
     ros__parameters:
-      update_frequency: 7.0
+      update_frequency: 5.0
       publish_frequency: 2.0
       global_frame: odom
       robot_base_frame: base_link
@@ -174,7 +169,7 @@ local_costmap:
       rolling_window: true
       width: 5
       height: 5
-      resolution: 0.025
+      resolution: 0.05
       robot_radius: 0.1
       plugins: ["obstacle_layer", "inflation_layer"]
       inflation_layer:
@@ -210,7 +205,7 @@ global_costmap:
       robot_base_frame: base_link
       use_sim_time: False
       robot_radius: 0.1
-      resolution: 0.025
+      resolution: 0.05
       track_unknown_space: true
       plugins: ["static_layer","obstacle_layer","inflation_layer"]
       obstacle_layer:
@@ -254,7 +249,7 @@ map_saver:
 
 planner_server:
   ros__parameters:
-    expected_planner_frequency: 10.0
+    expected_planner_frequency: 20.0
     use_sim_time: False
     planner_plugins: ["GridBased"]
     GridBased:
@@ -267,26 +262,26 @@ planner_server_rclcpp_node:
   ros__parameters:
     use_sim_time: False
 
-behavior_server:
+recoveries_server:
   ros__parameters:
     costmap_topic: local_costmap/costmap_raw
     footprint_topic: local_costmap/published_footprint
     cycle_frequency: 10.0
-    behavior_plugins: ["spin", "backup", "wait"]
+    recovery_plugins: ["spin", "backup", "wait"]
     spin:
-      plugin: "nav2_behaviors/Spin"
+      plugin: "nav2_recoveries/Spin"
     backup:
-      plugin: "nav2_behaviors/BackUp"
+      plugin: "nav2_recoveries/BackUp"
     wait:
-      plugin: "nav2_behaviors/Wait"
+      plugin: "nav2_recoveries/Wait"
     global_frame: odom
     robot_base_frame: base_link
-    transform_tolerance: 0.1
+    transform_timeout: 0.1
     use_sim_time: False
     simulate_ahead_time: 2.0
-    max_rotational_vel: 1.5
+    max_rotational_vel: 0.5
     min_rotational_vel: 0.05
-    rotational_acc_lim: 0.10
+    rotational_acc_lim: 0.05
 
 robot_state_publisher:
   ros__parameters:
