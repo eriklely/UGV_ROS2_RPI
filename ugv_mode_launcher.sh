@@ -71,6 +71,10 @@ while true; do
     echo "  7) Navigation EMCL/TEB    → ros2 launch ugv_nav nav.launch.py use_rviz:=true use_localization:=emcl use_localplan:=teb"
     echo "  8) RTABMAP RGB-D          → ros2 launch ugv_slam rtabmap_rgbd.launch.py use_rviz:=true"
     echo
+    echo -e "${BLUE}=== GPS MODES (GPS input: /gps/fix (iPhone)) ===${NC}"
+    echo "  9) GPS EKF Bringup        → ros2 launch ugv_bringup bringup_gps_ekf.launch.py use_rviz:=false"
+    echo " 10) GPS Waypoint Mission   → ros2 launch ugv_nav nav_gps_waypoints.launch.py use_rviz:=true"
+    echo
     echo -e "${CYAN}GPS/Vizanti note:${NC} GPS remains available separately. For aerial map use, run Vizanti independently"
     echo "(it reads /gps/fix directly; no nav/slam integration needed)."
     echo
@@ -141,6 +145,24 @@ while true; do
             echo -e "${GREEN}>>> RTABMAP RGB-D${NC}"
             echo "Command: ros2 launch ugv_slam rtabmap_rgbd.launch.py use_rviz:=true"
             ros2 launch ugv_slam rtabmap_rgbd.launch.py use_rviz:=true
+            ;;
+        9)
+            print_header
+            echo -e "${GREEN}>>> GPS EKF Bringup${NC}"
+            echo "Command: ros2 launch ugv_bringup bringup_gps_ekf.launch.py use_rviz:=false"
+            echo
+            echo -e "${CYAN}GPS input: /gps/fix (iPhone)${NC}"
+            echo
+            ros2 launch ugv_bringup bringup_gps_ekf.launch.py use_rviz:=false
+            ;;
+        10)
+            print_header
+            echo -e "${GREEN}>>> GPS Waypoint Mission${NC}"
+            echo "Command: ros2 launch ugv_nav nav_gps_waypoints.launch.py use_rviz:=true"
+            echo
+            echo -e "${CYAN}GPS input: /gps/fix (iPhone)${NC}"
+            echo
+            ros2 launch ugv_nav nav_gps_waypoints.launch.py use_rviz:=true
             ;;
         Q|q)
             echo -e "${GREEN}Exiting. Goodbye!${NC}"

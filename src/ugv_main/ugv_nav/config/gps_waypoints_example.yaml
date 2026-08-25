@@ -1,0 +1,11 @@
+# GPS waypoints configuration
+# Replace the latitude/longitude values below with real coordinates before running.
+# Each waypoint requires a unique name, a latitude, and a longitude (decimal degrees).
+
+waypoints:
+  - name: "Waypoint_1"
+    latitude: 0.0
+    longitude: 0.0
+  - name: "Waypoint_2"
+    latitude: 0.0
+    longitude: 0.0
