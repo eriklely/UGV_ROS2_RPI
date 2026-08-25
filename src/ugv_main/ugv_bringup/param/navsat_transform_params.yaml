@@ -23,10 +23,26 @@ navsat_transform_node:
         wait_for_datum: false
 
         # Magnetic declination for your location (radians).
-        # Example: for ~10° East declination set 0.1745; for West use negative.
-        # With use_odometry_yaw: true this value is unused for heading init but
-        # kept for documentation purposes; set to 0.0 if unknown.
-        magnetic_declination_radians: 0.0
+        # With use_odometry_yaw: true this value is not used for moving-start
+        # heading init, but it IS applied if you ever switch to magnetometer mode.
+        # Set it correctly for your deployment region so the config is portable.
+        #
+        # Calibration reference (approximate regional values):
+        #   Netherlands / Western Europe : +0.0349  (~2° E, varies by location)
+        #   Eastern US (e.g. New York)   : -0.2182  (~-12.5° W)
+        #   Western US (e.g. California) : +0.2269  (~13° E)
+        #   Central Europe (Germany)     : +0.0698  (~4° E)
+        #   East Asia (Japan / Korea)    : -0.1222  (~-7° W)
+        #   Australia (Sydney)           : +0.2182  (~12.5° E)
+        #
+        # To look up the precise value for your coordinates visit:
+        #   https://www.ngdc.noaa.gov/geomag/calculators/magcalc.shtml
+        # Convert degrees → radians: radians = degrees × π/180
+        #
+        # Override at runtime without editing this file:
+        #   ros2 launch ugv_bringup bringup_imu_ekf.launch.py \
+        #       use_gps:=true mag_declination:=0.0349
+        magnetic_declination_radians: 0.0486   # 2° 47' E  (Utrecht, NL — 2026-08-25)
 
         # Yaw offset applied to the converted GPS odometry (radians).
         # Set to 0.0; any fixed offset should be calibrated in the field.

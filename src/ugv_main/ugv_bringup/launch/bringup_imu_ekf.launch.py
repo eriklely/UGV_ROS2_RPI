@@ -12,6 +12,7 @@ from ament_index_python.packages import get_package_share_directory
 
 from launch.actions import IncludeLaunchDescription, LogInfo
 from launch.launch_description_sources import PythonLaunchDescriptionSource
+from launch.substitutions import PythonExpression
 
 def generate_launch_description():
     # Declare launch arguments
@@ -36,10 +37,35 @@ def generate_launch_description():
                     'When false, only local odom+IMU localization is active.'
     )
 
+    # Magnetic declination override (radians).  Overrides the value in
+    # navsat_transform_params.yaml at runtime — useful for quick field testing
+    # without editing the config file.
+    # Example: ros2 launch ... use_gps:=true mag_declination:=0.0349
+    # Leave at 0.0 to use the value from navsat_transform_params.yaml.
+    mag_declination_arg = DeclareLaunchArgument(
+        'mag_declination',
+        default_value='',
+        description='Override magnetic_declination_radians in navsat_transform_node '
+                    '(radians). Empty string means use the value from the YAML file. '
+                    'Example for Netherlands: 0.0349'
+    )
+
+    # Lidar odometry fusion switch.  Pass use_lidar_odom:=true to load
+    # ekf_with_lidar.yaml for the local EKF so that RF2O laser odometry
+    # (/odom_laser) is fused as a fallback odometry source.
+    use_lidar_odom_arg = DeclareLaunchArgument(
+        'use_lidar_odom',
+        default_value='false',
+        description='Fuse RF2O laser odometry (/odom_laser) into the local EKF. '
+                    'Requires rf2o_laser_odometry to be running. '
+                    'Provides fallback odometry under tree cover or GPS outages.'
+    )
+
     bringup_pkg = get_package_share_directory('ugv_bringup')
 
     imu_filter_config = os.path.join(bringup_pkg, 'param', 'imu_filter_param.yaml')
     ekf_no_gps_config = os.path.join(bringup_pkg, 'param', 'ekf.yaml')
+    ekf_lidar_config = os.path.join(bringup_pkg, 'param', 'ekf_with_lidar.yaml')
     ekf_gps_config = os.path.join(bringup_pkg, 'param', 'ekf_gps.yaml')
     navsat_config = os.path.join(bringup_pkg, 'param', 'navsat_transform_params.yaml')
 
@@ -96,12 +122,24 @@ def generate_launch_description():
     )
 
     # Local EKF (odom frame) — always active regardless of GPS mode.
+    # Uses ekf_with_lidar.yaml when use_lidar_odom:=true, otherwise ekf.yaml.
     ekf_node = Node(
         package='robot_localization',
         executable='ekf_node',
         name='ekf_filter_node',
         output='screen',
+        condition=UnlessCondition(LaunchConfiguration('use_lidar_odom')),
         parameters=[ekf_no_gps_config],
+        remappings=[('/odometry/filtered', '/odom')]
+    )
+
+    ekf_node_lidar = Node(
+        package='robot_localization',
+        executable='ekf_node',
+        name='ekf_filter_node',
+        output='screen',
+        condition=IfCondition(LaunchConfiguration('use_lidar_odom')),
+        parameters=[ekf_lidar_config],
         remappings=[('/odometry/filtered', '/odom')]
     )
 
@@ -122,13 +160,32 @@ def generate_launch_description():
 
     # navsat_transform_node — converts GPS fix to odometry/gps using
     # use_odometry_yaw (moving-start heading init).
+    # If mag_declination argument is non-empty it overrides the YAML value so
+    # the operator can test different declination values without editing files.
     navsat_transform_node = Node(
         package='robot_localization',
         executable='navsat_transform_node',
         name='navsat_transform_node',
         output='screen',
         condition=IfCondition(LaunchConfiguration('use_gps')),
-        parameters=[navsat_config],
+        parameters=[
+            navsat_config,
+            # When mag_declination is provided (non-empty), override the YAML
+            # value at runtime.  PythonExpression evaluates to the supplied
+            # float; when the argument is empty the expression returns the same
+            # value that is already in the YAML file (0.0 default), which is
+            # harmless because the YAML value is loaded first and the dict
+            # below is merged on top.
+            {
+                'magnetic_declination_radians': PythonExpression([
+                    'float("',
+                    LaunchConfiguration('mag_declination'),
+                    '") if "',
+                    LaunchConfiguration('mag_declination'),
+                    '" != "" else 0.0'
+                ])
+            }
+        ],
         remappings=[
             ('imu', '/imu/data'),
             ('gps/fix', '/gps/fix'),
@@ -149,13 +206,28 @@ def generate_launch_description():
         remappings=[('/odometry/filtered', '/odometry/global')]
     )
 
+    log_lidar_enabled = LogInfo(
+        condition=IfCondition(LaunchConfiguration('use_lidar_odom')),
+        msg='[bringup_imu_ekf] Lidar odometry mode ENABLED — '
+            'ekf_with_lidar.yaml loaded; /odom_laser will be fused into the local EKF. '
+            'Ensure rf2o_laser_odometry is running.'
+    )
+    log_lidar_disabled = LogInfo(
+        condition=UnlessCondition(LaunchConfiguration('use_lidar_odom')),
+        msg='[bringup_imu_ekf] Lidar odometry DISABLED — standard ekf.yaml loaded.'
+    )
+
     return LaunchDescription([
         pub_odom_tf_arg,
         use_rviz_arg,
         rviz_config_arg,
         use_gps_arg,
+        mag_declination_arg,
+        use_lidar_odom_arg,
         log_gps_enabled,
         log_gps_disabled,
+        log_lidar_enabled,
+        log_lidar_disabled,
         robot_state_launch,
         bringup_node,
         imu_complementary_filter_node,
@@ -164,6 +236,7 @@ def generate_launch_description():
         driver_node,
         base_node,
         ekf_node,
+        ekf_node_lidar,
         navsat_transform_node,
         ekf_node_map,
     ])
