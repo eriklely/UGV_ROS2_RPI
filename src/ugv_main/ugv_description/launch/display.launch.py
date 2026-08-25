@@ -67,10 +67,6 @@ def launch_setup(context, *args, **kwargs):
         namespace='ugv',
         name='joint_state_publisher_gui',
         arguments=[urdf_model_path],
-        parameters=[{
-            'source_list': ['/ugv/joint_commands'],   # ← this is the key
-            'rate': 30.0,
-        }], 
         condition=IfCondition(use_joint_state_publisher_gui)
     )
 
@@ -81,10 +77,6 @@ def launch_setup(context, *args, **kwargs):
         namespace='ugv',
         name='joint_state_publisher',
         arguments=[urdf_model_path],
-        parameters=[{
-            'source_list': ['/ugv/joint_commands'],   # ← this is the key
-            'rate': 30.0,
-        }], 
         condition=UnlessCondition(use_joint_state_publisher_gui)
     )
 
