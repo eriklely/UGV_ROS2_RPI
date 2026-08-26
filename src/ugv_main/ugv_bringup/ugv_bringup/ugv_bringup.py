@@ -113,8 +113,6 @@ class ugv_bringup(Node):
         # Initialize the base controller with the UART port and baud rate
         self.base_controller = BaseController(serial_port, 115200)
         # Timer to periodically execute the feedback loop
-        # 100Hz (0.01s) - reduced from 1ms to avoid excessive CPU usage
-        self.feedback_timer = self.create_timer(0.01, self.feedback_loop)
         # 20Hz (0.05s) - reduced from 1ms (1000Hz) to match serial bandwidth at 115200 baud
         self.feedback_timer = self.create_timer(0.05, self.feedback_loop)
 
