@@ -43,6 +43,12 @@ def generate_launch_description():
         'use_lidar', default_value='true',
         description='Whether to start lidar driver locally (robot=true, laptop=false)'
     )
+    
+    # Declare launch argument for whether to launch RViz2
+    declare_use_rviz = DeclareLaunchArgument(
+        'use_rviz', default_value='false',
+        description='Whether to launch RViz2'
+    )
                             
     # Parameters for the SLAM node
     parameters = {
@@ -62,7 +68,7 @@ def generate_launch_description():
         ("depth/image", "oak/stereo/image_raw"),
     ]
     
-    # Launch the lidar bringup launch file (conditional)
+    # Launch the lidar bringup launch file (conditional - when on robot)
     bringup_lidar_launch = IncludeLaunchDescription(PythonLaunchDescriptionSource(
         [os.path.join(get_package_share_directory('ugv_bringup'), 'launch'),
          '/bringup_lidar.launch.py']),
@@ -71,6 +77,17 @@ def generate_launch_description():
             'rviz_config': 'slam_3d',
         }.items(),
         condition=IfCondition(LaunchConfiguration('use_lidar'))
+    )
+    
+    # Include display.launch.py when NOT using lidar (laptop mode - for RViz and robot state)
+    display_launch = IncludeLaunchDescription(PythonLaunchDescriptionSource(
+        [os.path.join(get_package_share_directory('ugv_description'), 'launch'),
+         '/display.launch.py']),
+        launch_arguments={
+            'use_rviz': LaunchConfiguration('use_rviz'),
+            'rviz_config': 'slam_3d',
+        }.items(),
+        condition=UnlessCondition(LaunchConfiguration('use_lidar'))
     )
         
     # Launch the oak lite bringup launch file
@@ -121,7 +138,9 @@ def generate_launch_description():
         declare_qos,
         declare_localization,
         declare_use_lidar,
+        declare_use_rviz,
         bringup_lidar_launch,
+        display_launch,
         bringup_oak_lite_launch,
         robot_pose_publisher_launch,
         rtabmap_slam_node_slam,
