@@ -10,6 +10,8 @@ import math
 import threading
 import json
 import queue
+import os
+from ament_index_python.packages import get_package_share_directory
 
 a = "point_a" 
 b = "point_b" 
@@ -34,6 +36,8 @@ class BehaviorController(Node):
         self.goal_publisher = self.create_publisher(PoseStamped, '/goal_pose', 10)
         # Initialize the distance and yaw variables
         self.distance = Pose().position
+        # Use a separate Point to store the odom position to avoid reference issues
+        self._odom_position = None
         self.yaw = 0.0
         self.current_pose = None
         self.behavior_done = None
@@ -68,14 +72,8 @@ class BehaviorController(Node):
                 command_type = json_data['type']
                 data_value = json_data['data']
                 
-                # Create the command string
-                if command_type == "stop":
-                    command_string = "self.stop()"
-                else:
-                    command_string = f"self.{command_type}({data_value})"
-                
-                # Put the command in the queue
-                self.command_queue.put(command_string)
+                # Put the command dict in the queue (not string for exec)
+                self.command_queue.put({'type': command_type, 'data': data_value})
         
         # Succeed the goal
         goal_handle.succeed()
@@ -86,22 +84,35 @@ class BehaviorController(Node):
         
     def process_commands(self):
         # Process the commands in the queue
+        # Safe command dispatch table - only allow known methods
+        command_map = {
+            'stop': self.stop,
+            'move': self.move,
+            'spin': self.spin,
+            'save_point': self.save_map_point,
+            'nav_to_point': self.pub_nav_point,
+        }
+        
         while rclpy.ok():
-            command_string = self.command_queue.get()
-            if command_string is None:
-                break  
-            self.execute_behavior(command_string)
+            command = self.command_queue.get()
+            if command is None:
+                break
+            # Safe command dispatch - no exec/eval
+            command_type = command['type']
+            data_value = command['data']
+            
+            if command_type in command_map:
+                try:
+                    if command_type == 'stop':
+                        command_map[command_type]()
+                    else:
+                        command_map[command_type](data_value)
+                except Exception as e:
+                    self.get_logger().error(f'Error executing command {command_type}: {e}')
+            else:
+                self.get_logger().error(f'Unknown command type: {command_type}')
             self.command_queue.task_done()
-    
-    def execute_behavior(self, command_string):
-        # Execute the command
-        print(command_string)
-        try:
-            exec(command_string)    
-        except Exception as e:
-            self.get_logger().error(f"Error executing behavior: {e}")
-            self.get_logger().error(f"Executed command: {command_string}")
-    
+
     def odom_callback(self, msg):
         # Get the orientation of the robot
         q1 = msg.pose.pose.orientation.x
@@ -114,7 +125,9 @@ class BehaviorController(Node):
         cosy_cosp = 1 - 2 * (q2 * q2 + q3 * q3)
         
         # Store the distance and yaw of the robot
-        self.distance = msg.pose.pose.position
+        # Copy position values to avoid reference issues with ROS message objects
+        self._odom_position = msg.pose.pose.position
+        self.distance = self._odom_position
         self.yaw = math.atan2(siny_cosp, cosy_cosp)  
                                
     def drive_on_heading(self, distance):
@@ -125,14 +138,16 @@ class BehaviorController(Node):
         twist_msg.angular.z = 0.0
         
         # Store the start distance
+        # Copy position values to avoid reference issues (self.distance may be updated by odom_callback)
         start_distance = self.distance
-        print('start distance:', start_distance)
-           
+        start_x = start_distance.x
+        start_y = start_distance.y
+        print('start distance:', start_x, start_y)
         # Calculate the delta distance
         delta_distance = 0
         while abs(delta_distance) < abs(distance):
-            diff_x = self.distance.x - start_distance.x
-            diff_y = self.distance.y - start_distance.y
+            diff_x = self.distance.x - start_x
+            diff_y = self.distance.y - start_y
             delta_distance = math.hypot(diff_x, diff_y)
             
             print('now distance:', self.distance.x, self.distance.y)    
@@ -148,14 +163,16 @@ class BehaviorController(Node):
         twist_msg.angular.z = 0.0
         
         # Store the start distance
+        # Copy position values to avoid reference issues (self.distance may be updated by odom_callback)
         start_distance = self.distance
-        print('start distance:', start_distance)
-  
+        start_x = start_distance.x
+        start_y = start_distance.y
+        print('start distance:', start_x, start_y)
         # Calculate the delta distance
         delta_distance = 0
         while abs(delta_distance) < abs(distance):
-            diff_x = self.distance.x - start_distance.x
-            diff_y = self.distance.y - start_distance.y
+            diff_x = self.distance.x - start_x
+            diff_y = self.distance.y - start_y
             delta_distance = math.hypot(diff_x, diff_y)
             
             print('now distance:', self.distance.x, self.distance.y)    
@@ -185,7 +202,11 @@ class BehaviorController(Node):
         delta_yaw = 0.0
         while abs(delta_yaw) < abs(math.radians(angle)):
             delta_yaw = self.yaw - start_yaw
-            delta_yaw = (delta_yaw + math.pi) % (2 * math.pi) - math.pi 
+            # Normalize delta_yaw to [-pi, pi]
+            while delta_yaw > math.pi:
+                delta_yaw -= 2 * math.pi
+            while delta_yaw < -math.pi:
+                delta_yaw += 2 * math.pi
             print(f'Rotated angle: {math.degrees(delta_yaw)} degrees')
             self.velocity_publisher.publish(twist_msg)
         self.stop()
@@ -220,10 +241,18 @@ class BehaviorController(Node):
 
     def save_points_to_file(self):
         # Save the map points to a file
-        with open('/home/ws/ugv_ws/map_points.txt', 'w') as file:
+        # Use package share directory for portable path
+        try:
+            pkg_share = get_package_share_directory('ugv_tools')
+            file_path = os.path.join(pkg_share, 'map_points.txt')
+        except:
+            # Fallback to current directory
+            file_path = 'map_points.txt'
+        
+        with open(file_path, 'w') as file:
             for point_name, pose in self.points.items():
                 file.write(f'{point_name}: Position(x={pose.position.x}, y={pose.position.y}, z={pose.position.z}), Orientation(x={pose.orientation.x}, y={pose.orientation.y}, z={pose.orientation.z}, w={pose.orientation.w})\n')
-        self.get_logger().info('Saved points to map_points.txt')
+        self.get_logger().info(f'Saved points to {file_path}')
 
     def pub_nav_point(self, point):
         # Publish a navigation point

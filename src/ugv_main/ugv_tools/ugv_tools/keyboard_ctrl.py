@@ -70,7 +70,7 @@ class ugv_Keyboard(Node):
         self.declare_parameter("linear_speed_limit", 1.0)
         self.declare_parameter("angular_speed_limit", 1.0)
 
-        self.linenar_speed_limit = self.get_parameter("linear_speed_limit").get_parameter_value().double_value
+        self.linear_speed_limit = self.get_parameter("linear_speed_limit").get_parameter_value().double_value
         self.angular_speed_limit = self.get_parameter("angular_speed_limit").get_parameter_value().double_value
 
         self.settings = termios.tcgetattr(sys.stdin)
@@ -155,8 +155,8 @@ def main():
                 speed = speed * speedBindings[key][0]
                 turn = turn * speedBindings[key][1]
                 count = 0
-                if speed > ugv_keyboard.linenar_speed_limit:
-                    speed = ugv_keyboard.linenar_speed_limit
+                if speed > ugv_keyboard.linear_speed_limit:
+                    speed = ugv_keyboard.linear_speed_limit
                     print("Linear speed limit reached!")
                 if turn > ugv_keyboard.angular_speed_limit:
                     turn = ugv_keyboard.angular_speed_limit
@@ -177,7 +177,7 @@ def main():
             if xspeed_switch:
                 twist.linear.x = speed * x
             else:
-                twist.linear.y = speed * x
+                twist.linear.x = speed * x  # Use linear.x for both modes, y is typically not used for differential drive
             twist.angular.z = turn * th
 
             if not stop:

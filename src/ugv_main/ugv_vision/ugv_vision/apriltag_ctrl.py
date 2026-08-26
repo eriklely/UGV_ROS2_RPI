@@ -117,10 +117,6 @@ class ApriltagCtrl(Node):
         result_img_msg = self.bridge.cv2_to_imgmsg(frame, encoding="bgr8")
         # Publish the result image
         self.apriltag_ctrl_publisher.publish(result_img_msg)
-        # Show the result image
-        cv2.imshow('ctrled Image', frame)
-        # Wait for a key press
-        cv2.waitKey(1)
 
 def main(args=None):
     # Initialize the ROS client library

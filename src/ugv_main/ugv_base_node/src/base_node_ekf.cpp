@@ -82,7 +82,7 @@ class OdomPublisher : public rclcpp::Node
 
 public:
     OdomPublisher()
-        : Node("base_node")
+        : Node("base_node_ekf"), last_time_(this->now())
     {
         // Declare parameters
         this->declare_parameter<std::string>("odom_frame", "odom");
@@ -161,6 +161,15 @@ private:
 
         float dxy_ave = (dright + dleft) / 2.0;
         float dth = (dright - dleft) / 0.175;
+
+        // Guard against division by zero
+        if (dt <= 0.0 || !std::isfinite(dt))
+        {
+            vx = 0.0f;
+            vw = 0.0f;
+            return;
+        }
+
         vx = dxy_ave / dt;
         vw = dth / dt;
         if (!std::isfinite(vx) || !std::isfinite(vw))

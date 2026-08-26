@@ -121,18 +121,20 @@ class ColorTracker(Node):
                 self.get_logger().info(f'Tracking block at ({cx}, {cy})')
                 
                 # Check if the center of the rectangle is within a certain range of the center of the image
-                if (cx - 320) > 30: 
+                image_center_x = frame.shape[1] // 2
+                image_center_y = frame.shape[0] // 2
+                if (cx - image_center_x) > 30: 
                     print("turn right")
                     data = [{"T": 1, "type": "spin", "data": -1}]
-                elif (320 - cx) > 30: 
+                elif (image_center_x - cx) > 30: 
                     print("turn left")
                     data = [{"T": 1, "type": "spin", "data": 1}]
                 else:
                     # Check if the center of the rectangle is within a certain range of the center of the image
-                    if (240 - cy) > 30:
+                    if (image_center_y - cy) > 30:
                         print("move forward")
                         data = [{"T": 1, "type": "drive_on_heading", "data": 0.01}]
-                    elif (cy - 240) > 30:
+                    elif (cy - image_center_y) > 30:
                         print("move back")
                         data = [{"T": 1, "type": "back_up", "data": 0.01}]
                     else:

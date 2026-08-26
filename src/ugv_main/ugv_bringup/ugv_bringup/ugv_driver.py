@@ -9,22 +9,25 @@ from std_msgs.msg import Float32, Float32MultiArray
 import subprocess
 import time
 import os
+from ament_index_python.packages import get_package_share_directory
 
 def is_jetson():
     result = any("ugv_jetson" in root for root, dirs, files in os.walk("/"))
     return result
 
-if is_jetson():
-    serial_port = '/dev/ttyTHS1'
-else:
-    serial_port = '/dev/ttyAMA0'
-
-# Initialize serial communication with the UGV
-ser = serial.Serial(serial_port, 115200, timeout=1)
 
 class UgvDriver(Node):
     def __init__(self, name):
         super().__init__(name)
+
+        # Determine serial port based on platform
+        if is_jetson():
+            serial_port = '/dev/ttyTHS1'
+        else:
+            serial_port = '/dev/ttyAMA0'
+
+        # Initialize serial communication with the UGV
+        self.ser = serial.Serial(serial_port, 115200, timeout=1)
 
         # Subscribe to velocity commands (cmd_vel topic)
         self.cmd_vel_sub_ = self.create_subscription(Twist, "cmd_vel", self.cmd_vel_callback, 10)
@@ -44,7 +47,9 @@ class UgvDriver(Node):
         angular_velocity = msg.angular.z
 
         # Apply minimum threshold to angular velocity if linear velocity is zero
-        if linear_velocity == 0:
+        # Use epsilon for float comparison to avoid precision issues
+        epsilon = 1e-6
+        if abs(linear_velocity) < epsilon:
             if 0 < angular_velocity < 0.2:
                 angular_velocity = 0.2
             elif -0.2 < angular_velocity < 0:
@@ -52,7 +57,7 @@ class UgvDriver(Node):
 
         # Send the velocity data to the UGV as a JSON string
         data = json.dumps({'T': '13', 'X': linear_velocity, 'Z': angular_velocity}) + "\n"
-        ser.write(data.encode())
+        self.ser.write(data.encode())
 
     # Callback for processing joint state updates
     def joint_states_callback(self, msg):
@@ -83,7 +88,7 @@ class UgvDriver(Node):
             "SY": 600,
         }) + "\n"
                 
-        ser.write(joint_data.encode())
+        self.ser.write(joint_data.encode())
 
     # Callback for processing LED control commands
     def led_ctrl_callback(self, msg):
@@ -97,15 +102,22 @@ class UgvDriver(Node):
             "IO5": IO5,
         }) + "\n"
                 
-        ser.write(led_ctrl_data.encode())
+        self.ser.write(led_ctrl_data.encode())
 
     # Callback for processing voltage data
     def voltage_callback(self, msg):
         voltage_value = msg.data
 
         # If voltage drops below a threshold, play a low battery warning sound
-        if 0.1 < voltage_value < 9: 
-            subprocess.run(['aplay', '-D', 'plughw:3,0', '/home/ws/ugv_ws/src/ugv_main/ugv_bringup/ugv_bringup/low_battery.wav'])
+        if 0.1 < voltage_value < 9:
+            # Use package share directory for portable path
+            try:
+                pkg_share = get_package_share_directory('ugv_bringup')
+                sound_file = os.path.join(pkg_share, 'low_battery.wav')
+            except:
+                # Fallback
+                sound_file = '/home/ws/ugv_ws/src/ugv_main/ugv_bringup/ugv_bringup/low_battery.wav'
+            subprocess.run(['aplay', '-D', 'plughw:3,0', sound_file])
             time.sleep(5)
 
 def main(args=None):
@@ -117,9 +129,9 @@ def main(args=None):
     except KeyboardInterrupt:
         pass  # Graceful shutdown on user interrupt
     finally:
+        node.ser.close()  # Close the serial connection
         node.destroy_node()
         rclpy.shutdown()
-        ser.close()  # Close the serial connection
 
 if __name__ == '__main__':
     main()

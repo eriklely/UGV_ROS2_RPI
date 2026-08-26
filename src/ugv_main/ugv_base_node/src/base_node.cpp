@@ -83,7 +83,7 @@ class OdomPublisher : public rclcpp::Node
 
 public:
     OdomPublisher()
-        : Node("base_node")
+        : Node("base_node"), last_time_(this->now())
     {
         // Declare and retrieve parameters
         this->declare_parameter<std::string>("odom_frame", "odom");
@@ -131,7 +131,7 @@ private:
     // Callback to handle raw odometry data and update position/velocity
     void handle_odom(const std::shared_ptr<std_msgs::msg::Float32MultiArray> msg)
     {
-        rclcpp::Time curren_time = rclcpp::Clock().now();
+        rclcpp::Time curren_time = this->now();
 
         float now_odl = msg->data.at(0);  // Left wheel odometry
         float now_odr = msg->data.at(1);  // Right wheel odometry
@@ -212,7 +212,7 @@ private:
         auto trans = geometry_msgs::msg::TransformStamped();
 
         // Set the header information
-        odom.header.stamp = rclcpp::Clock().now();
+        odom.header.stamp = this->now();
         odom.header.frame_id = odom_frame;
         odom.child_frame_id = base_footprint_frame;
 
@@ -267,7 +267,7 @@ private:
         // If enabled, broadcast the transformation
         if (pub_odom_tf_)
         {
-            trans.header.stamp = rclcpp::Clock().now();
+            trans.header.stamp = this->now();
             trans.header.frame_id = odom_frame;
             trans.child_frame_id = base_footprint_frame;
 

@@ -68,17 +68,17 @@ class GestureCtrl(Node):
         result = future.result().result
         self.get_logger().info('Result: {0}'.format(result.result))
                 
-    def detect_gesture(self, hand_landmarks):
+    def detect_gesture(self, hand_landmarks, frame_shape):
         # Initialize a list to store the landmarks
         lmlist=[]
         # Initialize a list to store the tip ids
         tipids=[4,8,12,16,20]
-
+        
+        # Get the height, width, and channels of the image
+        h, w, c = frame_shape
         # Loop through the landmarks
         for id,lm in enumerate(hand_landmarks.landmark):
           
-          # Get the height, width, and channels of the image
-          h,w,c= 480,640,3
           # Get the x and y coordinates of the landmark
           cx,cy=int(lm.x * w) , int(lm.y * h)
           # Add the landmark to the list
@@ -135,12 +135,14 @@ class GestureCtrl(Node):
             
         # Check if there are any hands in the image
         if results.multi_hand_landmarks:
+            # Get frame shape for gesture detection
+            frame_shape = frame.shape
             # Loop through the hands
             for hand_landmarks in results.multi_hand_landmarks:
                 # Draw the landmarks on the image
                 mp_draw.draw_landmarks(frame, hand_landmarks, mp_hands.HAND_CONNECTIONS)
                 # Detect the gesture
-                gesture_type = self.detect_gesture(hand_landmarks)        
+                gesture_type = self.detect_gesture(hand_landmarks, frame_shape)        
                 print(gesture_type)
                 
                 # Check the gesture type and send the corresponding goal

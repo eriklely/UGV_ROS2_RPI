@@ -38,7 +38,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
 #install(TARGETS 
 #  DESTINATION lib/${PROJECT_NAME})
 
-include_directories(include/ugv_slam)
+include_directories(include/ugv_interface)
 install(DIRECTORY srv action DESTINATION share/${PROJECT_NAME})
 
 if(BUILD_TESTING)

@@ -11,16 +11,11 @@
 
   <depend>rclcpp</depend>
   <depend>std_msgs</depend>
-  <depend>sensor_msgs</depend>
-  <depend>image_transport</depend>
-  <depend>tf2_ros</depend>
-  <depend>message_filters</depend>
-  <depend>geometry_msgs</depend>
-  
+  <depend>action_msgs</depend>
 
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>
-  
+
   <build_depend>action_msgs</build_depend>
   <exec_depend>action_msgs</exec_depend>
 

@@ -78,8 +78,10 @@ class BaseController:
 
     # Receive and decode data from the serial connection
     def on_data_received(self):
+        # Read line first, then clear buffer to avoid race condition
+        line = self.rl.readline().decode('utf-8')
         self.ser.reset_input_buffer()
-        data_read = json.loads(self.rl.readline().decode('utf-8'))  # Read and parse JSON data
+        data_read = json.loads(line)  # Parse JSON data
         return data_read
 
     # Add a command to the queue to be sent via UART
@@ -100,6 +102,9 @@ class BaseController:
 class ugv_bringup(Node):
     def __init__(self):
         super().__init__('ugv_bringup')
+        # Declare IMU conversion parameters (defaults for MPU6050)
+        self.declare_parameter('accel_scale', 8192.0)  # For +/-4g range
+        self.declare_parameter('gyro_scale', 16.4)     # For +/-2000deg/s range
         # Publishers for IMU data, magnetic field data, odometry, and voltage
         self.imu_data_raw_publisher_ = self.create_publisher(Imu, "imu/data_raw", 100)
         self.imu_mag_publisher_ = self.create_publisher(MagneticField, "imu/mag", 100)
@@ -108,7 +113,8 @@ class ugv_bringup(Node):
         # Initialize the base controller with the UART port and baud rate
         self.base_controller = BaseController(serial_port, 115200)
         # Timer to periodically execute the feedback loop
-        self.feedback_timer = self.create_timer(0.001, self.feedback_loop)
+        # 100Hz (0.01s) - reduced from 1ms to avoid excessive CPU usage
+        self.feedback_timer = self.create_timer(0.01, self.feedback_loop)
 
     # Main loop for reading sensor feedback and publishing it to ROS topics
     def feedback_loop(self):
@@ -127,14 +133,19 @@ class ugv_bringup(Node):
         msg.header.frame_id = "base_imu_link"
         imu_raw_data = self.base_controller.base_data
 
+        # Use parameters for IMU conversion (configurable per sensor)
+        # Default values for MPU6050: accel_scale=8192 (for +/-4g), gyro_scale=16.4 (for +/-2000deg/s)
+        accel_scale = self.get_parameter('accel_scale').get_parameter_value().double_value
+        gyro_scale = self.get_parameter('gyro_scale').get_parameter_value().double_value
+
         # Populate the linear acceleration and angular velocity fields
-        msg.linear_acceleration.x = 9.8 * float(imu_raw_data["ax"]) / 8192
-        msg.linear_acceleration.y = 9.8 * float(imu_raw_data["ay"]) / 8192
-        msg.linear_acceleration.z = 9.8 * float(imu_raw_data["az"]) / 8192
+        msg.linear_acceleration.x = 9.8 * float(imu_raw_data["ax"]) / accel_scale
+        msg.linear_acceleration.y = 9.8 * float(imu_raw_data["ay"]) / accel_scale
+        msg.linear_acceleration.z = 9.8 * float(imu_raw_data["az"]) / accel_scale
         
-        msg.angular_velocity.x = 3.1415926 * float(imu_raw_data["gx"]) / (16.4 * 180)
-        msg.angular_velocity.y = 3.1415926 * float(imu_raw_data["gy"]) / (16.4 * 180)
-        msg.angular_velocity.z = 3.1415926 * float(imu_raw_data["gz"]) / (16.4 * 180)
+        msg.angular_velocity.x = 3.1415926 * float(imu_raw_data["gx"]) / (gyro_scale * 180)
+        msg.angular_velocity.y = 3.1415926 * float(imu_raw_data["gy"]) / (gyro_scale * 180)
+        msg.angular_velocity.z = 3.1415926 * float(imu_raw_data["gz"]) / (gyro_scale * 180)
               
         self.imu_data_raw_publisher_.publish(msg)  # Publish the IMU data
         
