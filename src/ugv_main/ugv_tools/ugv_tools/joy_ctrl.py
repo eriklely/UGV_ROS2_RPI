@@ -59,8 +59,6 @@ class JoyTeleop(Node):
 
     def callback(self, msg: Joy):
         # ===== LEFT STICK → Driving =====
-        # axes[0] = Left X → turn
-        # axes[1] = Left Y → forward / back
         lin = self.filter_data(msg.axes[1]) * self.xspeed_limit * self.linear_Gear
         ang = self.filter_data(msg.axes[0]) * self.angular_speed_limit * self.angular_Gear
 
@@ -71,16 +69,20 @@ class JoyTeleop(Node):
         if self.Joy_active:
             self.pub_cmdVel.publish(twist)
 
+        # ===== R1 → Center camera =====
+        if len(msg.buttons) > 10 and msg.buttons[10] == 1:
+            self.pan = 0.0
+            self.tilt = 0.0
+            self.publish_pt()
+            return          # optional: ignore stick while R1 is held
+
         # ===== RIGHT STICK → Camera =====
-        # axes[2] = Right X → pan
-        # axes[3] = Right Y → tilt
         self.pan  += -self.filter_data(msg.axes[2]) * self.pt_step
         self.tilt +=  self.filter_data(msg.axes[3]) * self.pt_step
 
         self.pan  = max(-3.0, min(3.0, self.pan))
         self.tilt = max(-0.7, min(1.4, self.tilt))
         self.publish_pt()
-
 
 def main(args=None):
     rclpy.init(args=args)
