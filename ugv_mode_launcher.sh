@@ -80,6 +80,16 @@ while true; do
     echo "  9) Navigation EMCL/TEB    -> ros2 launch ugv_nav nav.launch.py use_rviz:=true use_localization:=emcl use_localplan:=teb use_ekf_odom:=${USE_EKF_ODOM:-false}"
     echo " 10) RTABMAP RGB-D          -> ros2 launch ugv_slam rtabmap_rgbd.launch.py use_rviz:=true"
     echo
+    echo -e "${BLUE}=== GPS MODES (GPS input: /gps/fix from iPhone) ===${NC}"
+    echo " 11) GPS Nav + Waypoints [RUN ON LAPTOP] -> ros2 launch ugv_nav nav_gps_waypoints.launch.py use_rviz:=true"
+    echo
+    echo -e "${CYAN}GPS/Vizanti note:${NC} GPS remains available separately. For aerial map use, run Vizanti independently"
+    echo "(it reads /gps/fix directly; no nav/slam integration needed)."
+    echo
+    echo "  Q) Quit"
+    echo
+    read -rp "Select mode: " choice
+
 case $choice in
         1)
             print_header
@@ -187,12 +197,3 @@ case $choice in
     echo -e "${YELLOW}Launch finished or interrupted.${NC}"
     read -rp "Press Enter to return to main menu..."
 done
-    echo -e "${BLUE}=== GPS MODES (GPS input: /gps/fix from iPhone) ===${NC}"
-    echo " 11) GPS Nav + Waypoints [RUN ON LAPTOP] -> ros2 launch ugv_nav nav_gps_waypoints.launch.py use_rviz:=true"
-    echo
-    echo -e "${CYAN}GPS/Vizanti note:${NC} GPS remains available separately. For aerial map use, run Vizanti independently"
-    echo "(it reads /gps/fix directly; no nav/slam integration needed)."
-    echo
-    echo "  Q) Quit"
-    echo
-    read -rp "Select mode: " choice
