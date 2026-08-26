@@ -36,6 +36,13 @@ def generate_launch_description():
         'localization', default_value='false',
         description='Launch in localization mode.'
     )
+    
+    # Declare launch argument for whether to bring up lidar locally (on robot)
+    # On laptop, lidar data comes from robot over ROS2 network
+    declare_use_lidar = DeclareLaunchArgument(
+        'use_lidar', default_value='true',
+        description='Whether to start lidar driver locally (robot=true, laptop=false)'
+    )
                             
     # Parameters for the SLAM node
     parameters = {
@@ -55,14 +62,15 @@ def generate_launch_description():
         ("depth/image", "oak/stereo/image_raw"),
     ]
     
-    # Launch the lidar bringup launch file
+    # Launch the lidar bringup launch file (conditional)
     bringup_lidar_launch = IncludeLaunchDescription(PythonLaunchDescriptionSource(
         [os.path.join(get_package_share_directory('ugv_bringup'), 'launch'),
          '/bringup_lidar.launch.py']),
         launch_arguments={
             'use_rviz': LaunchConfiguration('use_rviz'),
             'rviz_config': 'slam_3d',
-        }.items()
+        }.items(),
+        condition=IfCondition(LaunchConfiguration('use_lidar'))
     )
         
     # Launch the oak lite bringup launch file
@@ -112,6 +120,7 @@ def generate_launch_description():
         declare_queue_size,
         declare_qos,
         declare_localization,
+        declare_use_lidar,
         bringup_lidar_launch,
         bringup_oak_lite_launch,
         robot_pose_publisher_launch,

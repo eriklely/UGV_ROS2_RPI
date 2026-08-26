@@ -123,30 +123,40 @@ case $choice in
         5)
             print_header
             echo -e "${GREEN}>>> Gmapping SLAM${NC}"
-            echo "Command: ros2 launch ugv_slam gmapping.launch.py use_rviz:=true"
-            echo
-            echo -e "${CYAN}>>> SECOND terminal (manual driving):${NC}"
-            echo "    ros2 run ugv_tools keyboard_ctrl"
-            echo
-            echo -e "${CYAN}>>> When finished, save map:${NC}"
-            echo "    cd /home/ws/ugv_ws/src/ugv_main/ugv_nav/maps"
-            echo "    ros2 run nav2_map_server map_saver_cli -f ./map"
-            echo
-            ros2 launch ugv_slam gmapping.launch.py use_rviz:=true
+            if [ "${MACHINE}" = "rpi" ]; then
+                echo "Command: ros2 launch ugv_slam gmapping.launch.py use_rviz:=false use_lidar:=true"
+                ros2 launch ugv_slam gmapping.launch.py use_rviz:=false use_lidar:=true
+            else
+                echo "Command: ros2 launch ugv_slam gmapping.launch.py use_rviz:=true use_lidar:=false"
+                echo
+                echo -e "${CYAN}>>> SECOND terminal (manual driving):${NC}"
+                echo "    ros2 run ugv_tools keyboard_ctrl"
+                echo
+                echo -e "${CYAN}>>> When finished, save map:${NC}"
+                echo "    cd /home/ws/ugv_ws/src/ugv_main/ugv_nav/maps"
+                echo "    ros2 run nav2_map_server map_saver_cli -f ./map"
+                echo
+                ros2 launch ugv_slam gmapping.launch.py use_rviz:=true use_lidar:=false
+            fi
             ;;
         6)
             print_header
             echo -e "${GREEN}>>> Cartographer SLAM${NC}"
-            echo "Command: ros2 launch ugv_slam cartographer.launch.py use_rviz:=true"
-            echo
-            echo -e "${CYAN}>>> SECOND terminal (manual driving):${NC}"
-            echo "    ros2 run ugv_tools keyboard_ctrl"
-            echo
-            echo -e "${CYAN}>>> When finished, save map:${NC}"
-            echo "    cd /home/ws/ugv_ws/src/ugv_main/ugv_nav/maps"
-            echo "    ros2 run nav2_map_server map_saver_cli -f ./map"
-            echo
-            ros2 launch ugv_slam cartographer.launch.py use_rviz:=true
+            if [ "${MACHINE}" = "rpi" ]; then
+                echo "Command: ros2 launch ugv_slam cartographer.launch.py use_rviz:=false use_lidar:=true"
+                ros2 launch ugv_slam cartographer.launch.py use_rviz:=false use_lidar:=true
+            else
+                echo "Command: ros2 launch ugv_slam cartographer.launch.py use_rviz:=true use_lidar:=false"
+                echo
+                echo -e "${CYAN}>>> SECOND terminal (manual driving):${NC}"
+                echo "    ros2 run ugv_tools keyboard_ctrl"
+                echo
+                echo -e "${CYAN}>>> When finished, save map:${NC}"
+                echo "    cd /home/ws/ugv_ws/src/ugv_main/ugv_nav/maps"
+                echo "    ros2 run nav2_map_server map_saver_cli -f ./map"
+                echo
+                ros2 launch ugv_slam cartographer.launch.py use_rviz:=true use_lidar:=false
+            fi
             ;;
         7)
             print_header
@@ -169,8 +179,13 @@ case $choice in
         10)
             print_header
             echo -e "${GREEN}>>> RTABMAP RGB-D${NC}"
-            echo "Command: ros2 launch ugv_slam rtabmap_rgbd.launch.py use_rviz:=true"
-            ros2 launch ugv_slam rtabmap_rgbd.launch.py use_rviz:=true
+            if [ "${MACHINE}" = "rpi" ]; then
+                echo "Command: ros2 launch ugv_slam rtabmap_rgbd.launch.py use_rviz:=false use_lidar:=true"
+                ros2 launch ugv_slam rtabmap_rgbd.launch.py use_rviz:=false use_lidar:=true
+            else
+                echo "Command: ros2 launch ugv_slam rtabmap_rgbd.launch.py use_rviz:=true use_lidar:=false"
+                ros2 launch ugv_slam rtabmap_rgbd.launch.py use_rviz:=true use_lidar:=false
+            fi
             ;;
         11)
             print_header
