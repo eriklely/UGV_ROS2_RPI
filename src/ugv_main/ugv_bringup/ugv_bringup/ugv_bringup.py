@@ -115,6 +115,8 @@ class ugv_bringup(Node):
         # Timer to periodically execute the feedback loop
         # 100Hz (0.01s) - reduced from 1ms to avoid excessive CPU usage
         self.feedback_timer = self.create_timer(0.01, self.feedback_loop)
+        # 20Hz (0.05s) - reduced from 1ms (1000Hz) to match serial bandwidth at 115200 baud
+        self.feedback_timer = self.create_timer(0.05, self.feedback_loop)
 
     # Main loop for reading sensor feedback and publishing it to ROS topics
     def feedback_loop(self):
