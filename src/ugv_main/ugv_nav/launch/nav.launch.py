@@ -48,7 +48,8 @@ def launch_setup(context, *args, **kwargs):
         launch_arguments={
             'use_rviz': LaunchConfiguration('use_rviz'),
             'rviz_config': 'nav_2d', 
-        }.items()
+        }.items(),
+        condition=UnlessCondition(LaunchConfiguration('use_ekf_odom'))
     )
 
     nav2_bringup_amcl_launch = IncludeLaunchDescription(
@@ -105,6 +106,7 @@ def generate_launch_description():
         DeclareLaunchArgument('use_localplan', default_value='teb', description='Choose which localplan to use: dwa,teb'),
         DeclareLaunchArgument('use_localization', default_value='amcl', description='Choose which use_localization to use: amcl,cartographer'),
         DeclareLaunchArgument('use_rviz', default_value='false', description='Whether to launch RViz2'),
+        DeclareLaunchArgument('use_ekf_odom', default_value='false', description='If true, skip bringup_lidar (expects /odom from external EKF like bringup_imu_ekf)'),
         OpaqueFunction(function=launch_setup)
     ])
 

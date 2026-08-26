@@ -54,6 +54,13 @@ echo
 echo -e "Running as: ${GREEN}${MACHINE}${NC}"
 sleep 1
 
+# Set USE_EKF_ODOM based on machine type
+if [ "${MACHINE}" = "rpi" ]; then
+    export USE_EKF_ODOM=true
+else
+    export USE_EKF_ODOM=false
+fi
+
 while true; do
     print_header
     echo -e "Machine: ${GREEN}${MACHINE}${NC}"
@@ -67,9 +74,9 @@ while true; do
     echo -e "${BLUE}=== LAPTOP / STANDALONE MODES ===${NC}"
     echo "  4) Gmapping SLAM          → ros2 launch ugv_slam gmapping.launch.py use_rviz:=true"
     echo "  5) Cartographer SLAM      → ros2 launch ugv_slam cartographer.launch.py use_rviz:=true"
-    echo "  6) Navigation AMCL/TEB    → ros2 launch ugv_nav nav.launch.py use_rviz:=true use_localization:=amcl use_localplan:=teb"
-    echo "  7) Navigation AMCL/DWA    → ros2 launch ugv_nav nav.launch.py use_rviz:=true use_localization:=amcl use_localplan:=dwa"
-    echo "  8) Navigation EMCL/TEB    → ros2 launch ugv_nav nav.launch.py use_rviz:=true use_localization:=emcl use_localplan:=teb"
+    echo "  6) Navigation AMCL/TEB    → ros2 launch ugv_nav nav.launch.py use_rviz:=true use_localization:=amcl use_localplan:=teb use_ekf_odom:=${USE_EKF_ODOM:-false}"
+    echo "  7) Navigation AMCL/DWA    → ros2 launch ugv_nav nav.launch.py use_rviz:=true use_localization:=amcl use_localplan:=dwa use_ekf_odom:=${USE_EKF_ODOM:-false}"
+    echo "  8) Navigation EMCL/TEB    → ros2 launch ugv_nav nav.launch.py use_rviz:=true use_localization:=emcl use_localplan:=teb use_ekf_odom:=${USE_EKF_ODOM:-false}"
     echo "  9) RTABMAP RGB-D          → ros2 launch ugv_slam rtabmap_rgbd.launch.py use_rviz:=true"
     echo
     echo -e "${BLUE}=== GPS MODES (GPS input: /gps/fix from iPhone) ===${NC}"
@@ -136,20 +143,20 @@ while true; do
         6)
             print_header
             echo -e "${GREEN}>>> Navigation AMCL/TEB${NC}"
-            echo "Command: ros2 launch ugv_nav nav.launch.py use_rviz:=true use_localization:=amcl use_localplan:=teb"
-            ros2 launch ugv_nav nav.launch.py use_rviz:=true use_localization:=amcl use_localplan:=teb
+            echo "Command: ros2 launch ugv_nav nav.launch.py use_rviz:=true use_localization:=amcl use_localplan:=teb use_ekf_odom:=${USE_EKF_ODOM:-false}"
+            ros2 launch ugv_nav nav.launch.py use_rviz:=true use_localization:=amcl use_localplan:=teb use_ekf_odom:=${USE_EKF_ODOM:-false}
             ;;
         7)
             print_header
             echo -e "${GREEN}>>> Navigation AMCL/DWA${NC}"
-            echo "Command: ros2 launch ugv_nav nav.launch.py use_rviz:=true use_localization:=amcl use_localplan:=dwa"
-            ros2 launch ugv_nav nav.launch.py use_rviz:=true use_localization:=amcl use_localplan:=dwa
+            echo "Command: ros2 launch ugv_nav nav.launch.py use_rviz:=true use_localization:=amcl use_localplan:=dwa use_ekf_odom:=${USE_EKF_ODOM:-false}"
+            ros2 launch ugv_nav nav.launch.py use_rviz:=true use_localization:=amcl use_localplan:=dwa use_ekf_odom:=${USE_EKF_ODOM:-false}
             ;;
         8)
             print_header
             echo -e "${GREEN}>>> Navigation EMCL/TEB${NC}"
-            echo "Command: ros2 launch ugv_nav nav.launch.py use_rviz:=true use_localization:=emcl use_localplan:=teb"
-            ros2 launch ugv_nav nav.launch.py use_rviz:=true use_localization:=emcl use_localplan:=teb
+            echo "Command: ros2 launch ugv_nav nav.launch.py use_rviz:=true use_localization:=emcl use_localplan:=teb use_ekf_odom:=${USE_EKF_ODOM:-false}"
+            ros2 launch ugv_nav nav.launch.py use_rviz:=true use_localization:=emcl use_localplan:=teb use_ekf_odom:=${USE_EKF_ODOM:-false}
             ;;
         9)
             print_header
