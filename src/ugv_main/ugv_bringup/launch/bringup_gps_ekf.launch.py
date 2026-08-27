@@ -8,6 +8,10 @@ from ament_index_python.packages import get_package_share_directory
 
 
 def generate_launch_description():
+    machine_arg = DeclareLaunchArgument(
+        'machine', default_value='rpi',
+        description='Machine role: rpi (robot) or laptop (nav). Controls TF publishing authority.'
+    )
     use_rviz_arg = DeclareLaunchArgument(
         'use_rviz', default_value='false',
         description='Whether to launch RViz2'
@@ -26,6 +30,7 @@ def generate_launch_description():
         launch_arguments={
             'use_rviz': LaunchConfiguration('use_rviz'),
             'pub_odom_tf': LaunchConfiguration('pub_odom_tf'),
+            'machine': LaunchConfiguration('machine'),
         }.items()
     )
 
@@ -50,11 +55,12 @@ def generate_launch_description():
         name='ekf_filter_node_global',
         namespace='ugv',
         output='screen',
-        parameters=[os.path.join(ugv_bringup_dir, 'param', 'ekf_gps.yaml')],
+        parameters=[os.path.join(ugv_bringup_dir, 'param', 'ekf_gps.yaml'), {'publish_tf': PythonExpression(["'true' if '", LaunchConfiguration('machine'), "' == 'rpi' else 'false'"])}],
         remappings=[('odometry/filtered', 'odometry/global')]
     )
 
     return LaunchDescription([
+        machine_arg,
         use_rviz_arg,
         pub_odom_tf_arg,
         bringup_imu_ekf_launch,

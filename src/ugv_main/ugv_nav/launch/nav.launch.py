@@ -8,6 +8,7 @@ from launch.actions import DeclareLaunchArgument, OpaqueFunction
 from launch.conditions import IfCondition, UnlessCondition, LaunchConfigurationEquals
 from launch.actions import IncludeLaunchDescription
 from launch.launch_description_sources import PythonLaunchDescriptionSource
+from launch.substitutions import PythonExpression
 
 # Function to get the localplan config file based on the launch configuration
 def get_localplan_config_file(context):
@@ -48,8 +49,9 @@ def launch_setup(context, *args, **kwargs):
         launch_arguments={
             'use_rviz': LaunchConfiguration('use_rviz'),
             'rviz_config': 'nav_2d', 
+            'machine': LaunchConfiguration('machine'),
         }.items(),
-        condition=UnlessCondition(LaunchConfiguration('use_ekf_odom'))
+        condition=IfCondition(PythonExpression(["'", LaunchConfiguration('machine'), "' == 'rpi'"]))
     )
 
     nav2_bringup_amcl_launch = IncludeLaunchDescription(
@@ -107,6 +109,7 @@ def generate_launch_description():
         DeclareLaunchArgument('use_localization', default_value='amcl', description='Choose which use_localization to use: amcl,cartographer'),
         DeclareLaunchArgument('use_rviz', default_value='false', description='Whether to launch RViz2'),
         DeclareLaunchArgument('use_ekf_odom', default_value='false', description='If true, skip bringup_lidar (expects /odom from external EKF like bringup_imu_ekf)'),
+        DeclareLaunchArgument('machine', default_value='laptop', description='Machine role: rpi (robot) or laptop (nav). Controls TF publishing authority.'),
         OpaqueFunction(function=launch_setup)
     ])
 

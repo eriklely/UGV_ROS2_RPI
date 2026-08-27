@@ -3,7 +3,7 @@ from launch_ros.substitutions import FindPackageShare
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
 from launch.conditions import IfCondition, UnlessCondition
-from launch.substitutions import Command, LaunchConfiguration
+from launch.substitutions import Command, LaunchConfiguration, PythonExpression
 
 from launch_ros.actions import Node
 from launch_ros.parameter_descriptions import ParameterValue
@@ -14,6 +14,10 @@ from launch.actions import IncludeLaunchDescription
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 
 def generate_launch_description():
+    machine_arg = DeclareLaunchArgument(
+        'machine', default_value='rpi',
+        description='Machine role: rpi (robot) or laptop (nav). Controls TF publishing authority.'
+    )
     pub_odom_tf_arg = DeclareLaunchArgument('pub_odom_tf', default_value='false',
                                             description='Whether to publish the tf from the original odom to the base_footprint')
     use_rviz_arg = DeclareLaunchArgument('use_rviz', default_value='false',
@@ -102,7 +106,7 @@ def generate_launch_description():
         name='ekf_filter_node',
         namespace='ugv',
         output='screen',
-        parameters=[ekf_config_file],
+        parameters=[ekf_config_file, {'publish_tf': PythonExpression(["'true' if '", LaunchConfiguration('machine'), "' == 'rpi' else 'false'"])}],
         remappings=[('odometry/filtered', 'odom')],
         condition=IfCondition(LaunchConfiguration('use_lidar_odom'))
     )
@@ -113,18 +117,32 @@ def generate_launch_description():
         name='ekf_filter_node',
         namespace='ugv',
         output='screen',
-        parameters=[ekf_config_file_no_lidar],
+        parameters=[ekf_config_file_no_lidar, {'publish_tf': PythonExpression(["'true' if '", LaunchConfiguration('machine'), "' == 'rpi' else 'false'"])}],
         remappings=[('odometry/filtered', 'odom')],
         condition=UnlessCondition(LaunchConfiguration('use_lidar_odom'))
     )
 
+    # Include bringup_lidar with machine argument passed through
+    bringup_lidar_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            os.path.join(get_package_share_directory('ugv_bringup'), 'launch', 'bringup_lidar.launch.py')
+        ),
+        launch_arguments={
+            'use_rviz': LaunchConfiguration('use_rviz'),
+            'rviz_config': 'slam_2d',
+            'machine': LaunchConfiguration('machine'),
+            'use_ekf_odom': 'true',  # EKF is running, so base_node should not publish TF
+        }.items()
+    )
+
     return LaunchDescription([
+        machine_arg,
         pub_odom_tf_arg,
         use_rviz_arg,
         rviz_config_arg,
         use_lidar_odom_arg,
         robot_state_launch,
-        bringup_node,
+        bringup_lidar_launch,
         imu_complementary_filter_node,
         #imu_filter_node,
         laser_bringup_launch,

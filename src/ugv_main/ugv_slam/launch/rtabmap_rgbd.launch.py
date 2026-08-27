@@ -1,6 +1,6 @@
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, SetEnvironmentVariable
-from launch.substitutions import LaunchConfiguration
+from launch.substitutions import LaunchConfiguration, PythonExpression
 from launch.conditions import IfCondition, UnlessCondition
 from launch_ros.actions import Node
 from launch.actions import IncludeLaunchDescription
@@ -37,11 +37,10 @@ def generate_launch_description():
         description='Launch in localization mode.'
     )
     
-    # Declare launch argument for whether to bring up lidar locally (on robot)
-    # On laptop, lidar data comes from robot over ROS2 network
-    declare_use_lidar = DeclareLaunchArgument(
-        'use_lidar', default_value='true',
-        description='Whether to start lidar driver locally (robot=true, laptop=false)'
+    # Declare machine role argument (like other SLAM launch files)
+    declare_machine = DeclareLaunchArgument(
+        'machine', default_value='rpi',
+        description='Machine role: rpi (robot) or laptop (nav). Controls TF publishing authority.'
     )
     
     # Declare launch argument for whether to launch RViz2
@@ -49,6 +48,9 @@ def generate_launch_description():
         'use_rviz', default_value='false',
         description='Whether to launch RViz2'
     )
+    
+    # Derive use_lidar from machine (robot=true, laptop=false)
+    use_lidar = PythonExpression(["'true' if '", LaunchConfiguration('machine'), "' == 'rpi' else 'false'"])
                             
     # Parameters for the SLAM node
     parameters = {
@@ -75,8 +77,9 @@ def generate_launch_description():
         launch_arguments={
             'use_rviz': LaunchConfiguration('use_rviz'),
             'rviz_config': 'slam_3d',
+            'machine': LaunchConfiguration('machine'),
         }.items(),
-        condition=IfCondition(LaunchConfiguration('use_lidar'))
+        condition=IfCondition(use_lidar)
     )
     
     # Include display.launch.py when NOT using lidar (laptop mode - for RViz and robot state)
@@ -87,7 +90,7 @@ def generate_launch_description():
             'use_rviz': LaunchConfiguration('use_rviz'),
             'rviz_config': 'slam_3d',
         }.items(),
-        condition=UnlessCondition(LaunchConfiguration('use_lidar'))
+        condition=UnlessCondition(use_lidar)
     )
         
     # Launch the oak lite bringup launch file
@@ -137,7 +140,7 @@ def generate_launch_description():
         declare_queue_size,
         declare_qos,
         declare_localization,
-        declare_use_lidar,
+        declare_machine,
         declare_use_rviz,
         bringup_lidar_launch,
         display_launch,
