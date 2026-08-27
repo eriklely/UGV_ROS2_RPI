@@ -61,6 +61,9 @@ class BaseController:
         self.data_buffer = None  # Buffer for holding received data
         # Base data structure to hold sensor values
         self.base_data = {"T": 1001, "L": 0, "R": 0, "ax": 0, "ay": 0, "az": 0, "gx": 0, "gy": 0, "gz": 0, "mx": 0, "my": 0, "mz": 0, "odl": 0, "odr": 0, "v": 0, "X": 0, "Y": 0}
+        # Pan/tilt feedback from separate T=109 (pan) and T=110 (tilt) messages
+        self.pan_angle = 0.0
+        self.tilt_angle = 0.0
     
     # Function to read and return feedback data from the serial input
     def feedback_data(self):
@@ -68,6 +71,14 @@ class BaseController:
             line = self.rl.readline().decode('utf-8')  # Read line from UART
             self.data_buffer = json.loads(line)  # Parse JSON data
             self.base_data = self.data_buffer  # Store received data
+            
+            # Handle separate pan/tilt feedback messages (T=109 pan, T=110 tilt)
+            msg_type = self.base_data.get("T")
+            if msg_type == 109:  # Pan angle feedback
+                self.pan_angle = float(self.base_data.get("angle", 0))
+            elif msg_type == 110:  # Tilt angle feedback
+                self.tilt_angle = float(self.base_data.get("angle", 0))
+            
             return self.base_data  # Return base data
         except json.JSONDecodeError as e:
             self.logger.error(f"JSON decode error: {e} with line: {line}")  # Log error
@@ -216,8 +227,9 @@ class ugv_bringup(Node):
         right_wheel_angle = odr_m / wheel_radius if wheel_radius > 0 else 0.0
         
         # Pan/tilt joints (feedback in degrees, convert to radians)
-        pan_deg = float(joint_data.get("X", 0))
-        tilt_deg = float(joint_data.get("Y", 0))
+        # Use stored pan/tilt angles from separate T=109/T=110 feedback messages
+        pan_deg = self.base_controller.pan_angle
+        tilt_deg = self.base_controller.tilt_angle
         
         msg.position = [
             left_wheel_angle,    # left_up_wheel_link_joint

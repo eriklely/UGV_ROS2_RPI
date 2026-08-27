@@ -80,12 +80,13 @@ class UgvDriver(Node):
         y_degree = (180 * y_rad) / 3.1415926
 
         # Send the joint data as a JSON string to the UGV
+        # Use T=133 (gimbal_ctrl) with SPD/ACC as expected by firmware
         joint_data = json.dumps({
-            'T': 134, 
+            'T': 133, 
             'X': x_degree, 
             'Y': y_degree, 
-            "SX": 600,
-            "SY": 600,
+            "SPD": 600,
+            "ACC": 10,
         }) + "\n"
                 
         self.ser.write(joint_data.encode())
