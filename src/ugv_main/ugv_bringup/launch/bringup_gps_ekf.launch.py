@@ -33,13 +33,14 @@ def generate_launch_description():
         package='robot_localization',
         executable='navsat_transform_node',
         name='navsat_transform_node',
+        namespace='ugv',
         output='screen',
         parameters=[os.path.join(ugv_bringup_dir, 'param', 'navsat_transform_params.yaml')],
         remappings=[
-            ('imu/data', '/imu/data'),
-            ('odometry/filtered', '/odom'),
-            ('gps/fix', '/gps/fix'),
-            ('odometry/gps', '/odometry/gps'),
+            ('imu/data', 'imu/data'),
+            ('odometry/filtered', 'odom'),
+            ('gps/fix', 'gps/fix'),
+            ('odometry/gps', 'odometry/gps'),
         ]
     )
 
@@ -47,9 +48,10 @@ def generate_launch_description():
         package='robot_localization',
         executable='ekf_node',
         name='ekf_filter_node_global',
+        namespace='ugv',
         output='screen',
         parameters=[os.path.join(ugv_bringup_dir, 'param', 'ekf_gps.yaml')],
-        remappings=[('/odometry/filtered', '/odometry/global')]
+        remappings=[('odometry/filtered', 'odometry/global')]
     )
 
     return LaunchDescription([

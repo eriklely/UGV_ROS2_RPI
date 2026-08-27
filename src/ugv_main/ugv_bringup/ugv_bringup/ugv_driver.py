@@ -32,11 +32,11 @@ class UgvDriver(Node):
         # Subscribe to velocity commands (cmd_vel topic)
         self.cmd_vel_sub_ = self.create_subscription(Twist, "cmd_vel", self.cmd_vel_callback, 10)
 
-        # Subscribe to joint states (ugv/joint_states topic)
-        self.joint_states_sub = self.create_subscription(JointState, 'ugv/joint_commands', self.joint_states_callback, 10)
+        # Subscribe to joint states (ugv/joint_commands topic)
+        self.joint_states_sub = self.create_subscription(JointState, 'joint_commands', self.joint_states_callback, 10)
 
-        # Subscribe to LED control data (ugv/led_ctrl topic)
-        self.led_ctrl_sub = self.create_subscription(Float32MultiArray, 'ugv/led_ctrl', self.led_ctrl_callback, 10)
+        # Subscribe to LED control data (led_ctrl topic - relative to namespace)
+        self.led_ctrl_sub = self.create_subscription(Float32MultiArray, 'led_ctrl', self.led_ctrl_callback, 10)
 
         # Subscribe to voltage data (voltage topic)
         self.voltage_sub = self.create_subscription(Float32, 'voltage', self.voltage_callback, 10)

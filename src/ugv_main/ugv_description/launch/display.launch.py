@@ -70,14 +70,19 @@ def launch_setup(context, *args, **kwargs):
         condition=IfCondition(use_joint_state_publisher_gui)
     )
 
+    # Determine whether to use the generic joint_state_publisher (for description only)
+    # For bringup/slam/nav configs, we use hardware joint state feedback from ugv_bringup
+    use_joint_state_publisher = 'true' if rviz_config == 'description' else 'false'
+
     # Define the joint_state_publisher node to publish joint states when the GUI is disabled
+    # Only enabled for 'description' config; for bringup/slam/nav, hardware feedback is used
     joint_state_publisher_node = Node(
         package='joint_state_publisher',
         executable='joint_state_publisher',
         namespace='ugv',
         name='joint_state_publisher',
         arguments=[urdf_model_path],
-        condition=UnlessCondition(use_joint_state_publisher_gui)
+        condition=IfCondition(use_joint_state_publisher)
     )
 
     # Get the appropriate RViz configuration file

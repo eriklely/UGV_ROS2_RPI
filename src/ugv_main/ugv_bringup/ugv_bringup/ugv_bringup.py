@@ -8,7 +8,7 @@ import logging
 import time
 from std_msgs.msg import Header, Float32MultiArray, Float32
 from geometry_msgs.msg import Twist
-from sensor_msgs.msg import Imu, MagneticField
+from sensor_msgs.msg import Imu, MagneticField, JointState
 import math
 import os
 
@@ -60,7 +60,7 @@ class BaseController:
         self.command_thread.start()
         self.data_buffer = None  # Buffer for holding received data
         # Base data structure to hold sensor values
-        self.base_data = {"T": 1001, "L": 0, "R": 0, "ax": 0, "ay": 0, "az": 0, "gx": 0, "gy": 0, "gz": 0, "mx": 0, "my": 0, "mz": 0, "odl": 0, "odr": 0, "v": 0}
+        self.base_data = {"T": 1001, "L": 0, "R": 0, "ax": 0, "ay": 0, "az": 0, "gx": 0, "gy": 0, "gz": 0, "mx": 0, "my": 0, "mz": 0, "odl": 0, "odr": 0, "v": 0, "X": 0, "Y": 0}
     
     # Function to read and return feedback data from the serial input
     def feedback_data(self):
@@ -105,11 +105,12 @@ class ugv_bringup(Node):
         # Declare IMU conversion parameters (defaults for MPU6050)
         self.declare_parameter('accel_scale', 8192.0)  # For +/-4g range
         self.declare_parameter('gyro_scale', 16.4)     # For +/-2000deg/s range
-        # Publishers for IMU data, magnetic field data, odometry, and voltage
+        # Publishers for IMU data, magnetic field data, odometry, voltage, and joint states
         self.imu_data_raw_publisher_ = self.create_publisher(Imu, "imu/data_raw", 100)
         self.imu_mag_publisher_ = self.create_publisher(MagneticField, "imu/mag", 100)
         self.odom_publisher_ = self.create_publisher(Float32MultiArray, "odom/odom_raw", 100)
         self.voltage_publisher_ = self.create_publisher(Float32, "voltage", 50)
+        self.joint_states_publisher_ = self.create_publisher(JointState, "joint_states", 50)
         # Initialize the base controller with the UART port and baud rate
         self.base_controller = BaseController(serial_port, 115200)
         # Timer to periodically execute the feedback loop
@@ -124,6 +125,7 @@ class ugv_bringup(Node):
             self.publish_imu_mag()  # Publish magnetic field data
             self.publish_odom_raw()  # Publish odometry data
             self.publish_voltage()  # Publish voltage data
+            self.publish_joint_states()  # Publish joint states (pan/tilt)
 
     # Publish IMU data to the ROS topic "imu/data_raw"
     def publish_imu_data_raw(self):
@@ -177,6 +179,23 @@ class ugv_bringup(Node):
         msg = Float32()
         msg.data = float(voltage_data["v"])/100
         self.voltage_publisher_.publish(msg)  # Publish the voltage data
+
+    # Publish joint states (pan/tilt) to the ROS topic "joint_states"
+    def publish_joint_states(self):
+        joint_data = self.base_controller.base_data
+        msg = JointState()
+        msg.header = Header()
+        msg.header.stamp = self.get_clock().now().to_msg()
+        msg.header.frame_id = "base_link"
+        # Joint names must match URDF: pt_base_link_to_pt_link1 (pan), pt_link1_to_pt_link2 (tilt)
+        msg.name = ["pt_base_link_to_pt_link1", "pt_link1_to_pt_link2"]
+        # Convert degrees to radians (feedback comes in degrees like commands)
+        pan_deg = float(joint_data.get("X", 0))
+        tilt_deg = float(joint_data.get("Y", 0))
+        msg.position = [pan_deg * math.pi / 180.0, tilt_deg * math.pi / 180.0]
+        msg.velocity = [0.0, 0.0]
+        msg.effort = [0.0, 0.0]
+        self.joint_states_publisher_.publish(msg)
                         
 # Main function to initialize the ROS node and start spinning
 def main(args=None):

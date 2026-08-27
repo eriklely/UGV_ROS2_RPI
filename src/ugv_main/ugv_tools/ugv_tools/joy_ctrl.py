@@ -30,7 +30,7 @@ class JoyTeleop(Node):
         self.angular_Gear = 1.0
 
         self.pub_cmdVel = self.create_publisher(Twist, 'cmd_vel', 10)
-        self.pt_pub = self.create_publisher(JointState, '/ugv/joint_commands', 10)
+        self.pt_pub = self.create_publisher(JointState, 'joint_commands', 10)
 
         self.create_subscription(Joy, 'joy', self.callback, 10)
 

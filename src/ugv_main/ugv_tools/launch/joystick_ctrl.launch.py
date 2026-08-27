@@ -22,6 +22,7 @@ def generate_launch_description():
             package='joy',
             executable='game_controller_node',
             name='game_controller',
+            namespace='ugv',
             output='screen',
             parameters=[{
                 'device_id': 0,
@@ -35,6 +36,7 @@ def generate_launch_description():
             package='ugv_tools',
             executable='joy_ctrl',
             name='joy_ctrl',
+            namespace='ugv',
             output='screen',
             parameters=[{
                 'xspeed_limit': 0.5,

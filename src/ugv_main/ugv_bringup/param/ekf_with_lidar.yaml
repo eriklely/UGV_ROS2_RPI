@@ -37,7 +37,7 @@ ekf_filter_node:
         world_frame: odom
 
         # --- Wheel odometry (velocity-only, differential) ---
-        odom0: /odom_raw
+        odom0: odom_raw
         odom0_config: [false, false, false,
                        false, false, false,
                        true,  false, false,
@@ -61,7 +61,7 @@ ekf_filter_node:
         #   odom1_twist_rejection_threshold — lower (e.g. 1.5) in open corridors
         #     where scan matching is reliable; raise (e.g. 3.0) in cluttered or
         #     featureless environments where laser odom can jump.
-        odom1: /odom_laser
+        odom1: odom_laser
         odom1_config: [false, false, false,
                        false, false, false,
                        true,  false, false,
@@ -75,7 +75,7 @@ ekf_filter_node:
         odom1_twist_rejection_threshold: 0.5
 
         # --- IMU (yaw + angular rate) ---
-        imu0: /imu/data
+        imu0: imu/data
         imu0_config: [false, false, false,
                       false, false, true,
                       false, false, false,

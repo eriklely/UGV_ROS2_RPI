@@ -31,10 +31,12 @@ def generate_launch_description():
     bringup_node = Node(
         package='ugv_bringup',
         executable='ugv_bringup',
+        namespace='ugv',
     )
     driver_node = Node(
         package='ugv_bringup',
         executable='ugv_driver',
+        namespace='ugv',
     )
     laser_bringup_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
@@ -49,6 +51,7 @@ def generate_launch_description():
     base_node = Node(
         package='ugv_base_node',
         executable='base_node',
+        namespace='ugv',
         parameters=[{'pub_odom_tf': LaunchConfiguration('pub_odom_tf')}]
     )
     return LaunchDescription([
