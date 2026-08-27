@@ -46,7 +46,7 @@ def generate_launch_description():
     package='tf2_ros',
     executable='static_transform_publisher',
     name='base_link_to_base_laser_ld19',
-    arguments=['0','0','0','0','0','0','base_link','base_lidar_link']
+    arguments=['0.04','0','0.12','0','0','0','base_link','base_lidar_link']
   )
 
 

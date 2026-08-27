@@ -69,6 +69,8 @@ def launch_setup(context, *args, **kwargs):
         launch_arguments={
             'map': map_yaml_path,
             'params_file': param_file,
+            'namespace': 'ugv',
+            'use_namespace': 'true'
         }.items(),
         condition=LaunchConfigurationEquals('use_localization', 'amcl')
     )
@@ -77,7 +79,9 @@ def launch_setup(context, *args, **kwargs):
         PythonLaunchDescriptionSource(os.path.join(ugv_nav_dir, 'launch/nav_bringup', 'nav2_bringup.launch.py')),
         launch_arguments={
             'map': map_yaml_path,
-            'params_file': param_file
+            'params_file': param_file,
+            'namespace': 'ugv',
+            'use_namespace': 'true'
         }.items(),
         condition=LaunchConfigurationEquals('use_localization', 'emcl')
     )
@@ -90,6 +94,15 @@ def launch_setup(context, *args, **kwargs):
         condition=LaunchConfigurationEquals('use_localization', 'emcl')
     )
     
+    nav2_bringup_cartographer_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(os.path.join(get_package_share_directory('ugv_nav'), 'launch/nav_bringup', 'bringup_launch_cartographer.launch.py')),
+         launch_arguments={
+             'params_file': os.path.join(get_package_share_directory('ugv_nav'), 'param', 'emcl_dwa.yaml'),
+             'namespace': 'ugv',
+             'use_namespace': 'true'
+         }.items(),
+        condition=LaunchConfigurationEquals('use_localization', 'cartographer')
+    )
     nav2_bringup_cartographer_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(os.path.join(get_package_share_directory('ugv_nav'), 'launch/nav_bringup', 'bringup_launch_cartographer.launch.py')),
          launch_arguments={

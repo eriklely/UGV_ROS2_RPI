@@ -76,7 +76,7 @@ class OdomPublisher : public rclcpp::Node
     bool is_initialized = false;
     rclcpp::Time last_time_;
     std::string odom_frame = "odom";
-    std::string base_link_frame = "base_link";
+    std::string base_link_frame = "base_footprint";
     float init_odl = 0.0;
     float init_odr = 0.0; 
 
@@ -86,7 +86,7 @@ public:
     {
         // Declare parameters
         this->declare_parameter<std::string>("odom_frame", "odom");
-        this->declare_parameter<std::string>("base_link_frame", "base_link");
+        this->declare_parameter<std::string>("base_link_frame", "base_footprint");
         this->declare_parameter<bool>("pub_odom_tf", false);
 
         // Get parameters

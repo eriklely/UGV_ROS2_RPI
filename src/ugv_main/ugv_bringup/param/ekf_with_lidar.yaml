@@ -33,7 +33,7 @@ ekf_filter_node:
         reset_on_time_jump: true
 
         odom_frame: odom
-        base_link_frame: base_link
+        base_link_frame: base_footprint
         world_frame: odom
 
         # --- Wheel odometry (velocity-only, differential) ---
