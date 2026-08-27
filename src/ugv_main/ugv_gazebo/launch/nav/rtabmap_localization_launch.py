@@ -16,7 +16,7 @@ def generate_launch_description():
     )
 
     parameters={
-          'frame_id':'base_footprint',
+          'frame_id':'base_link',
           'use_sim_time':use_sim_time,
           'queue_size':20,
           'subscribe_depth':True,

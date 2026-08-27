@@ -78,8 +78,12 @@ This node also has a sensor resetting algorithm. When `sensor_reset` is true, a 
 |-------------------------------|---------|------------|--------------------------------------------------------------------|
 | `odom_freq`                    | `int`     | 20 [Hz]    | frequency of odometry update                                       |
 | `num_particles`                | `int`     | 500       | number of particles                                                |
+| `num_particles`                | `int`     | 500       | number of particles                                                |
+  | `odom_frame_id`                | `string`  | \"odom\"     | the frame for odometry                                             |
+  | `footprint_frame_id`           | `string`  | \"base_link\" | the frame of the localized robot's base                    |
+  | `base_frame_id`                | `string`  | \"base_link\" | the frame of the robot's base. It is used for calculating the position and orientation of the LiDAR |
 | `odom_frame_id`                | `string`  | "odom"     | the frame for odometry                                             |
-| `footprint_frame_id`           | `string`  | "base_footprint" | the frame of the localized robot's base                    |
+| `footprint_frame_id`           | `string`  | "base_link" | the frame of the localized robot's base                    |
 | `base_frame_id`                | `string`  | "base_link" | the frame of the robot's base. It is used for calculating the position and orientation of the LiDAR |
 | `global_frame_id`              | `string`  | "map"      | the frame for localization                                         |
 | `initial_pose_x`               | `double`  | 0.0 [m]    | initial x coordinate of particles                                  |

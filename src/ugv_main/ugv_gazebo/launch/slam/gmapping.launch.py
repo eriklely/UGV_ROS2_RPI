@@ -46,7 +46,7 @@ def generate_launch_description():
                 {"use_sim_time": True},
                 {"is_stamped": True},
                 {"map_frame": "map"},
-                {"base_frame": "base_footprint"}
+                {"base_frame": "base_link"}
             ]
     ) 
         

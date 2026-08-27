@@ -100,7 +100,8 @@ def launch_setup(context, *args, **kwargs):
     
     robot_pose_publisher_launch = IncludeLaunchDescription(PythonLaunchDescriptionSource(
         [os.path.join(get_package_share_directory('robot_pose_publisher'), 'launch'),
-         '/robot_pose_publisher_launch.py'])
+         '/robot_pose_publisher_launch.py']),
+        condition=IfCondition(PythonExpression(["'", LaunchConfiguration('machine'), "' == 'rpi'"]))
     ) 
     
     return [

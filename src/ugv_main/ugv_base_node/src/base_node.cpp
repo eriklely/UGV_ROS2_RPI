@@ -77,7 +77,7 @@ class OdomPublisher : public rclcpp::Node
     bool is_initialized = false;
     rclcpp::Time last_time_;
     std::string odom_frame = "odom";
-    std::string base_footprint_frame = "base_footprint";
+    std::string base_link_frame = "base_link";
     float init_odl = 0.0; // Initial value for left wheel encoder
     float init_odr = 0.0; // Initial value for right wheel encoder
 
@@ -87,12 +87,12 @@ public:
     {
         // Declare and retrieve parameters
         this->declare_parameter<std::string>("odom_frame", "odom");
-        this->declare_parameter<std::string>("base_footprint_frame", "base_footprint");
+        this->declare_parameter<std::string>("base_link_frame", "base_link");
         this->declare_parameter<bool>("pub_odom_tf", false);
 
         this->get_parameter<bool>("pub_odom_tf", pub_odom_tf_);
         this->get_parameter<std::string>("odom_frame", odom_frame);
-        this->get_parameter<std::string>("base_footprint_frame", base_footprint_frame);
+        this->get_parameter<std::string>("base_link_frame", base_link_frame);
 
         // Initialize transform broadcaster
         tf_broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(*this);
@@ -214,7 +214,7 @@ private:
         // Set the header information
         odom.header.stamp = this->now();
         odom.header.frame_id = odom_frame;
-        odom.child_frame_id = base_footprint_frame;
+        odom.child_frame_id = base_link_frame;
 
         // Set the position and orientation in the odometry message
         odom.pose.pose.position.x = x_pos_;
@@ -269,7 +269,7 @@ private:
         {
             trans.header.stamp = this->now();
             trans.header.frame_id = odom_frame;
-            trans.child_frame_id = base_footprint_frame;
+            trans.child_frame_id = base_link_frame;
 
             // Set translation and rotation for the transform
             trans.transform.translation.x = x_pos_;

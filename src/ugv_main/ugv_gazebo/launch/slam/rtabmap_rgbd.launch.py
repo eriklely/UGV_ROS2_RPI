@@ -42,7 +42,7 @@ def generate_launch_description():
 
     # Parameters for the rtabmap_slam node
     parameters={
-          'frame_id':'base_footprint',
+          'frame_id':'base_link',
           'use_sim_time':use_sim_time,
           'queue_size':queue_size,
           'subscribe_depth':True,
@@ -114,7 +114,7 @@ def generate_launch_description():
                 {"use_sim_time": True},
                 {"is_stamped": True},
                 {"map_frame": "map"},
-                {"base_frame": "base_footprint"}
+                {"base_frame": "base_link"}
             ]
     ) 
                       

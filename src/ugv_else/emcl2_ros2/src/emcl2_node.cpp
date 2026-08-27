@@ -48,7 +48,7 @@ EMcl2Node::~EMcl2Node() {}
 void EMcl2Node::declareParameter()
 {
 	this->declare_parameter("global_frame_id", std::string("map"));
-	this->declare_parameter("footprint_frame_id", std::string("base_footprint"));
+	this->declare_parameter("footprint_frame_id", std::string("base_link"));
 	this->declare_parameter("odom_frame_id", std::string("odom"));
 	this->declare_parameter("base_frame_id", std::string("base_link"));
 

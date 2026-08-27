@@ -28,7 +28,7 @@ class TransformProcessor(Node):
     def check_transform(self,msg):
         try:
             now = rclpy.time.Time()
-            trans: TransformStamped = self.tf_buffer.lookup_transform('base_footprint', 'dock_frame', now)
+            trans: TransformStamped = self.tf_buffer.lookup_transform('base_link', 'dock_frame', now)
             print(trans.transform.translation)
             # Extract position and orientation from the transform
             x = trans.transform.translation.x

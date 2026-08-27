@@ -26,7 +26,7 @@ def generate_launch_description():
                     'odom_topic' : '/odom_laser',
                     'imu_topic' : '/imu/data',
                     'publish_tf' : False,
-                    'base_frame_id' : 'base_footprint',
+                    'base_frame_id' : 'base_link',
                     'odom_frame_id' : 'odom',
                     'init_pose_from_topic' : '',
                     'freq' : 20.0}],

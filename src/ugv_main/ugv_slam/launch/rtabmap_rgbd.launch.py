@@ -54,7 +54,7 @@ def generate_launch_description():
                             
     # Parameters for the SLAM node
     parameters = {
-            "frame_id": 'base_footprint',
+            "frame_id": 'base_link',
             'queue_size': queue_size,
             "subscribe_rgb": True,
             "subscribe_depth": True,

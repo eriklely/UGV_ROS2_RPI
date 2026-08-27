@@ -33,7 +33,7 @@ public:
 		tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
 
 		this->declare_parameter<std::string>("map_frame","map");
-		this->declare_parameter<std::string>("base_frame","base_footprint");
+		this->declare_parameter<std::string>("base_frame","base_link");
 		this->declare_parameter<bool>("is_stamped",false);
 
 		this->get_parameter("map_frame", map_frame);
@@ -84,7 +84,7 @@ private:
 	rclcpp::Publisher<geometry_msgs::msg::Pose>::SharedPtr publisher_;
 	size_t count_;
 	bool is_stamped = false;
-	std::string base_frame = "base_footprint";
+	std::string base_frame = "base_link";
 	std::string map_frame = "map";
 	std::shared_ptr<tf2_ros::TransformListener> tf_listener_;
 	std::shared_ptr<tf2_ros::Buffer> tf_buffer_;

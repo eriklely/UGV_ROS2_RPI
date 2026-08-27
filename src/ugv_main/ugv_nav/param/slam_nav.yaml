@@ -3,7 +3,7 @@ bt_navigator:
   ros__parameters:
     use_sim_time: false
     global_frame: map
-    robot_base_frame: base_footprint
+    robot_base_frame: base_link
     odom_topic: /odom
     bt_loop_duration: 10
     default_server_timeout: 20
@@ -123,7 +123,7 @@ controller_server:
       sim_time: 1.5
       linear_granularity: 0.05
       angular_granularity: 0.025
-      transform_tolerance: 0.2
+      transform_tolerance: 0.5
       xy_goal_tolerance: 0.30
       trans_stopped_velocity: 0.25
       short_circuit_trajectory_evaluation: True
@@ -262,8 +262,8 @@ behavior_server:
     assisted_teleop:
       plugin: "nav2_behaviors/AssistedTeleop"
     global_frame: odom
-    robot_base_frame: base_footprint
-    transform_tolerance: 0.1
+    robot_base_frame: base_link
+    transform_tolerance: 0.5
     use_sim_time: false
     simulate_ahead_time: 2.0
     max_rotational_vel: 1.2

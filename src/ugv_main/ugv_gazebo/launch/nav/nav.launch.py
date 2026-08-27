@@ -110,7 +110,7 @@ def launch_setup(context, *args, **kwargs):
                 {"use_sim_time": True},
                 {"is_stamped": True},
                 {"map_frame": "map"},
-                {"base_frame": "base_footprint"}
+                {"base_frame": "base_link"}
             ]
     ) 
         

@@ -17,7 +17,7 @@ def generate_launch_description():
     )
 
     parameters = {
-            "frame_id": 'base_footprint',
+            "frame_id": 'base_link',
             'queue_size': 20,
             "subscribe_rgb": True,
             "subscribe_depth": True,

@@ -76,7 +76,7 @@ class OdomPublisher : public rclcpp::Node
     bool is_initialized = false;
     rclcpp::Time last_time_;
     std::string odom_frame = "odom";
-    std::string base_footprint_frame = "base_footprint";
+    std::string base_link_frame = "base_link";
     float init_odl = 0.0;
     float init_odr = 0.0; 
 
@@ -86,13 +86,13 @@ public:
     {
         // Declare parameters
         this->declare_parameter<std::string>("odom_frame", "odom");
-        this->declare_parameter<std::string>("base_footprint_frame", "base_footprint");
+        this->declare_parameter<std::string>("base_link_frame", "base_link");
         this->declare_parameter<bool>("pub_odom_tf", false);
 
         // Get parameters
         this->get_parameter<bool>("pub_odom_tf", pub_odom_tf_);
         this->get_parameter<std::string>("odom_frame", odom_frame);
-        this->get_parameter<std::string>("base_footprint_frame", base_footprint_frame);
+        this->get_parameter<std::string>("base_link_frame", base_link_frame);
         tf_broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(*this);
 
         // Create subscriptions
@@ -203,7 +203,7 @@ private:
         nav_msgs::msg::Odometry odom;
         odom.header.stamp = curren_time;
         odom.header.frame_id = odom_frame;
-        odom.child_frame_id = base_footprint_frame;
+        odom.child_frame_id = base_link_frame;
 
         // Robot's position in x, y, and z
         odom.pose.pose.position.x = x_pos_;
@@ -255,7 +255,7 @@ private:
             geometry_msgs::msg::TransformStamped t;
             t.header.stamp = curren_time;
             t.header.frame_id = odom_frame;
-            t.child_frame_id = base_footprint_frame;
+            t.child_frame_id = base_link_frame;
             t.transform.translation.x = x_pos_;
             t.transform.translation.y = y_pos_;
             t.transform.translation.z = 0.0;
