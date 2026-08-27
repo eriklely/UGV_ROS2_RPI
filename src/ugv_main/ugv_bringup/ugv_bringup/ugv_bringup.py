@@ -59,11 +59,13 @@ class BaseController:
         self.command_thread = threading.Thread(target=self.process_commands, daemon=True)  # Start a separate thread for processing commands
         self.command_thread.start()
         self.data_buffer = None  # Buffer for holding received data
-        # Base data structure to hold sensor values
+        # Base data structure to hold sensor values (T=1001)
         self.base_data = {"T": 1001, "L": 0, "R": 0, "ax": 0, "ay": 0, "az": 0, "gx": 0, "gy": 0, "gz": 0, "mx": 0, "my": 0, "mz": 0, "odl": 0, "odr": 0, "v": 0, "X": 0, "Y": 0}
-        # Pan/tilt feedback from separate T=109 (pan) and T=110 (tilt) messages
+        # Pan/tilt feedback from T=1001 message ("pan" and "tilt" fields in degrees)
         self.pan_angle = 0.0
         self.tilt_angle = 0.0
+        # Track if we've received gimbal feedback from T=1001
+        self.has_gimbal_feedback = False
     
     # Function to read and return feedback data from the serial input
     def feedback_data(self):
@@ -72,12 +74,17 @@ class BaseController:
             self.data_buffer = json.loads(line)  # Parse JSON data
             self.base_data = self.data_buffer  # Store received data
             
-            # Handle separate pan/tilt feedback messages (T=109 pan, T=110 tilt)
+            # Handle T=1001 base feedback message
             msg_type = self.base_data.get("T")
-            if msg_type == 109:  # Pan angle feedback
-                self.pan_angle = float(self.base_data.get("angle", 0))
-            elif msg_type == 110:  # Tilt angle feedback
-                self.tilt_angle = float(self.base_data.get("angle", 0))
+            if msg_type == 1001:
+                # Check if this is gimbal feedback (moduleType=2)
+                # Firmware sends "pan" and "tilt" in degrees for gimbal
+                if "pan" in self.base_data and "tilt" in self.base_data:
+                    self.pan_angle = float(self.base_data.get("pan", 0))
+                    self.tilt_angle = float(self.base_data.get("tilt", 0))
+                    self.has_gimbal_feedback = True
+                # For RoArm (moduleType=1), feedback contains joint angles in radians
+                # in fields: ax, ay, az, ab, as, ae, at (handled by publish_joint_states_arm if needed)
             
             return self.base_data  # Return base data
         except json.JSONDecodeError as e:
@@ -227,7 +234,7 @@ class ugv_bringup(Node):
         right_wheel_angle = odr_m / wheel_radius if wheel_radius > 0 else 0.0
         
         # Pan/tilt joints (feedback in degrees, convert to radians)
-        # Use stored pan/tilt angles from separate T=109/T=110 feedback messages
+        # Use stored pan/tilt angles from T=1001 feedback message ("pan" and "tilt" fields)
         pan_deg = self.base_controller.pan_angle
         tilt_deg = self.base_controller.tilt_angle
         
