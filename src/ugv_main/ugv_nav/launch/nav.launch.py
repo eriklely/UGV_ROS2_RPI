@@ -54,6 +54,16 @@ def launch_setup(context, *args, **kwargs):
         condition=IfCondition(PythonExpression(["'", LaunchConfiguration('machine'), "' == 'rpi'"]))
     )
 
+    # Laptop mode: launch display (RViz + robot_state_publisher) without hardware bringup
+    display_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(os.path.join(get_package_share_directory('ugv_description'), 'launch', 'display.launch.py')),
+        launch_arguments={
+            'use_rviz': LaunchConfiguration('use_rviz'),
+            'rviz_config': 'nav_2d',
+        }.items(),
+        condition=UnlessCondition(PythonExpression(["'", LaunchConfiguration('machine'), "' == 'rpi'"]))
+    )
+
     nav2_bringup_amcl_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(os.path.join(nav2_bringup_dir, 'launch', 'bringup_launch.py')),
         launch_arguments={
@@ -95,6 +105,7 @@ def launch_setup(context, *args, **kwargs):
     
     return [
         bringup_lidar_launch,
+        display_launch,
         nav2_bringup_amcl_launch,
         nav2_bringup_emcl_launch,
         emcl_launch,
