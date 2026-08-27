@@ -105,6 +105,8 @@ class ugv_bringup(Node):
         # Declare IMU conversion parameters (defaults for MPU6050)
         self.declare_parameter('accel_scale', 8192.0)  # For +/-4g range
         self.declare_parameter('gyro_scale', 16.4)     # For +/-2000deg/s range
+        # Wheel radius parameter for converting odometry to wheel joint angles (default 0.08m = 8cm radius = 160mm diameter)
+        self.declare_parameter('wheel_radius', 0.08)
         # Publishers for IMU data, magnetic field data, odometry, voltage, and joint states
         self.imu_data_raw_publisher_ = self.create_publisher(Imu, "imu/data_raw", 100)
         self.imu_mag_publisher_ = self.create_publisher(MagneticField, "imu/mag", 100)
@@ -180,21 +182,53 @@ class ugv_bringup(Node):
         msg.data = float(voltage_data["v"])/100
         self.voltage_publisher_.publish(msg)  # Publish the voltage data
 
-    # Publish joint states (pan/tilt) to the ROS topic "joint_states"
+    # Publish joint states (pan/tilt + wheels) to the ROS topic "joint_states"
     def publish_joint_states(self):
         joint_data = self.base_controller.base_data
         msg = JointState()
         msg.header = Header()
         msg.header.stamp = self.get_clock().now().to_msg()
         msg.header.frame_id = "base_link"
-        # Joint names must match URDF: pt_base_link_to_pt_link1 (pan), pt_link1_to_pt_link2 (tilt)
-        msg.name = ["pt_base_link_to_pt_link1", "pt_link1_to_pt_link2"]
-        # Convert degrees to radians (feedback comes in degrees like commands)
+        
+        # Wheel radius parameter (default 0.08m = 8cm radius = 160mm diameter)
+        wheel_radius = self.get_parameter('wheel_radius').get_parameter_value().double_value
+        
+        # Joint names must match URDF:
+        # - 4 wheel joints (continuous): left_up, left_down, right_up, right_down
+        # - 2 pan/tilt joints (revolute): pt_base_link_to_pt_link1 (pan), pt_link1_to_pt_link2 (tilt)
+        msg.name = [
+            "left_up_wheel_link_joint",
+            "left_down_wheel_link_joint",
+            "right_up_wheel_link_joint",
+            "right_down_wheel_link_joint",
+            "pt_base_link_to_pt_link1",
+            "pt_link1_to_pt_link2"
+        ]
+        
+        # Wheel odometry from hardware (odl, odr in cm, converted to meters by /100)
+        # Both wheels on each side share the same position
+        odl_m = float(joint_data.get("odl", 0)) / 100.0  # Left wheel distance in meters
+        odr_m = float(joint_data.get("odr", 0)) / 100.0  # Right wheel distance in meters
+        
+        # Convert linear distance to wheel angle (radians)
+        # angle = distance / wheel_radius
+        left_wheel_angle = odl_m / wheel_radius if wheel_radius > 0 else 0.0
+        right_wheel_angle = odr_m / wheel_radius if wheel_radius > 0 else 0.0
+        
+        # Pan/tilt joints (feedback in degrees, convert to radians)
         pan_deg = float(joint_data.get("X", 0))
         tilt_deg = float(joint_data.get("Y", 0))
-        msg.position = [pan_deg * math.pi / 180.0, tilt_deg * math.pi / 180.0]
-        msg.velocity = [0.0, 0.0]
-        msg.effort = [0.0, 0.0]
+        
+        msg.position = [
+            left_wheel_angle,    # left_up_wheel_link_joint
+            left_wheel_angle,    # left_down_wheel_link_joint
+            right_wheel_angle,   # right_up_wheel_link_joint
+            right_wheel_angle,   # right_down_wheel_link_joint
+            pan_deg * math.pi / 180.0,   # pt_base_link_to_pt_link1 (pan)
+            tilt_deg * math.pi / 180.0   # pt_link1_to_pt_link2 (tilt)
+        ]
+        msg.velocity = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        msg.effort = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
         self.joint_states_publisher_.publish(msg)
                         
 # Main function to initialize the ROS node and start spinning
