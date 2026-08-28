@@ -77,7 +77,7 @@ def launch_setup(context, *args, **kwargs):
         'executable': 'joint_state_publisher',
         'name': 'joint_state_publisher',
         'parameters': [{'robot_description': robot_desc}],
-        'condition': IfCondition(PythonExpression(["'", LaunchConfiguration('use_rviz'), "' == 'true' and not ", LaunchConfiguration('use_joint_state_publisher_gui')]))
+        'condition': IfCondition(PythonExpression(["'", LaunchConfiguration('use_rviz'), "' == 'true' and '", LaunchConfiguration('use_joint_state_publisher_gui'), "' != 'true'"]))
     }
 
     # Add namespace to parameters only if it's not empty
