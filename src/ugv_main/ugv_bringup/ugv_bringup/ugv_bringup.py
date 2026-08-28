@@ -12,15 +12,8 @@ from sensor_msgs.msg import Imu, MagneticField, JointState
 import math
 import os
 
-def is_jetson():
-    result = any("ugv_jetson" in root for root, dirs, files in os.walk("/"))
-    return result
-
-if is_jetson():
-    serial_port = '/dev/ttyTHS1'
-else:
-    serial_port = '/dev/ttyAMA0'
-
+# REMOVED: os.walk("/") Jetson check at module import time - causes startup hang on Pi
+# This is now handled with simple os.path.exists check in __init__
 # Helper class for reading lines from a serial port
 class ReadLine:
     def __init__(self, s):
@@ -116,6 +109,7 @@ class BaseController:
     def base_json_ctrl(self, input_json):
         self.send_command(input_json)
 
+
 # ROS node class for bringing up the UGV system and publishing sensor data
 class ugv_bringup(Node):
     def __init__(self):
@@ -125,6 +119,21 @@ class ugv_bringup(Node):
         self.declare_parameter('gyro_scale', 16.4)     # For +/-2000deg/s range
         # Wheel radius parameter for converting odometry to wheel joint angles (default 0.08m = 8cm radius = 160mm diameter)
         self.declare_parameter('wheel_radius', 0.08)
+        # Declare serial port parameter for BaseController
+        self.declare_parameter('serial_port', '')
+        serial_port_param = self.get_parameter('serial_port').get_parameter_value().string_value
+
+        if serial_port_param:
+            serial_port = serial_port_param
+        else:
+            # Fallback: simple platform detection without walking entire filesystem
+            if os.path.exists('/dev/ttyTHS1'):
+                serial_port = '/dev/ttyTHS1'  # Jetson
+            else:
+                serial_port = '/dev/ttyAMA0'  # Raspberry Pi / default
+
+        self.get_logger().info(f'ugv_bringup using serial port: {serial_port}')
+
         # Publishers for IMU data, magnetic field data, odometry, voltage, and joint states
         self.imu_data_raw_publisher_ = self.create_publisher(Imu, "imu/data_raw", 100)
         self.imu_mag_publisher_ = self.create_publisher(MagneticField, "imu/mag", 100)
@@ -250,13 +259,18 @@ class ugv_bringup(Node):
         msg.effort = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
         self.joint_states_publisher_.publish(msg)
                         
+    def destroy_node(self):
+        if hasattr(self, 'base_controller') and self.base_controller.ser.is_open:
+            self.base_controller.ser.close()
+        super().destroy_node()
+
+
 # Main function to initialize the ROS node and start spinning
 def main(args=None):
     rclpy.init(args=args)  # Initialize ROS
     node = ugv_bringup()  # Create the UGV bringup node
     rclpy.spin(node)  # Keep the node running
-    #node.destroy_node()  # (optional) Shutdown the node
-    rclpy.shutdown()  # Shutdown ROS
-
+    node.destroy_node()
+    rclpy.shutdown()
 if __name__ == '__main__':
     main()

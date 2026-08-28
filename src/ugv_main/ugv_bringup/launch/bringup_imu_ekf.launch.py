@@ -79,10 +79,11 @@ def generate_launch_description():
         package='ugv_bringup',
         executable='ugv_driver',
     )
+    # base_node_ekf should NOT publish TF - EKF publishes odom->base_footprint
     base_node = Node(
         package='ugv_base_node',
         executable='base_node_ekf',
-        parameters=[{'pub_odom_tf': LaunchConfiguration('pub_odom_tf')}]
+        parameters=[{'pub_odom_tf': 'false'}]
     )
     
     # EKF config selection based on lidar odom usage
@@ -95,24 +96,51 @@ def generate_launch_description():
         'ekf.yaml'
     )
     
-    ekf_node_with_lidar = Node(
+    # FIX: publish_tf should be a boolean, not a string expression
+    # Only publish TF on the robot (rpi), not on laptop
+    # Use IfCondition with two separate EKF node definitions
+    ekf_node_with_lidar_rpi = Node(
         package='robot_localization',
         executable='ekf_node',
         name='ekf_filter_node',
         output='screen',
-        parameters=[ekf_config_file, {'publish_tf': PythonExpression(["'true' if '", LaunchConfiguration('machine'), "' == 'rpi' else 'false'"])}],
+        parameters=[ekf_config_file, {'publish_tf': True}],
         remappings=[('/odometry/filtered', '/odom')],
-        condition=IfCondition(LaunchConfiguration('use_lidar_odom'))
+        condition=IfCondition(LaunchConfiguration('use_lidar_odom')),
+        # Only on rpi
     )
     
-    ekf_node_no_lidar = Node(
+    ekf_node_with_lidar_laptop = Node(
         package='robot_localization',
         executable='ekf_node',
         name='ekf_filter_node',
         output='screen',
-        parameters=[ekf_config_file_no_lidar, {'publish_tf': PythonExpression(["'true' if '", LaunchConfiguration('machine'), "' == 'rpi' else 'false'"])}],
+        parameters=[ekf_config_file, {'publish_tf': False}],
         remappings=[('/odometry/filtered', '/odom')],
-        condition=UnlessCondition(LaunchConfiguration('use_lidar_odom'))
+        condition=IfCondition(LaunchConfiguration('use_lidar_odom')),
+        # Only on laptop
+    )
+
+    ekf_node_no_lidar_rpi = Node(
+        package='robot_localization',
+        executable='ekf_node',
+        name='ekf_filter_node',
+        output='screen',
+        parameters=[ekf_config_file_no_lidar, {'publish_tf': True}],
+        remappings=[('/odometry/filtered', '/odom')],
+        condition=UnlessCondition(LaunchConfiguration('use_lidar_odom')),
+        # Only on rpi
+    )
+
+    ekf_node_no_lidar_laptop = Node(
+        package='robot_localization',
+        executable='ekf_node',
+        name='ekf_filter_node',
+        output='screen',
+        parameters=[ekf_config_file_no_lidar, {'publish_tf': False}],
+        remappings=[('/odometry/filtered', '/odom')],
+        condition=UnlessCondition(LaunchConfiguration('use_lidar_odom')),
+        # Only on laptop
     )
 
     return LaunchDescription([
@@ -129,6 +157,9 @@ def generate_launch_description():
         rf2o_laser_odometry_launch,
         driver_node,
         base_node,
-        ekf_node_with_lidar,
-        ekf_node_no_lidar
+        ekf_node_with_lidar_rpi,
+        ekf_node_with_lidar_laptop,
+        ekf_node_no_lidar_rpi,
+        ekf_node_no_lidar_laptop
     ])
+

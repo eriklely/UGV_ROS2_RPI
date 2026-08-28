@@ -74,10 +74,10 @@ ekf_filter_node:
         odom1_pose_rejection_threshold: 2.0
         odom1_twist_rejection_threshold: 0.5
 
-        # --- IMU (yaw + angular rate) ---
+        # --- IMU (yaw rate only, NOT absolute yaw) ---
         imu0: imu/data
         imu0_config: [false, false, false,
-                      false, false, true,
+                      false, false, false,
                       false, false, false,
                       false, false, true,
                       false, false, false]
@@ -130,3 +130,4 @@ ekf_filter_node:
                                       0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.1,  0.0,  0.0,
                                       0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.1,  0.0,
                                       0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.1]
+

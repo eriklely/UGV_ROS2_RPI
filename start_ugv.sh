@@ -12,3 +12,4 @@ chmod 666 /dev/ttyAMA0 /dev/serial0 /dev/ttyUSB0 /dev/ttyS0 2>/dev/null
 
 echo "=== Starting UGV Rover bringup ==="
 exec ros2 launch ugv_bringup bringup_lidar.launch.py use_rviz:=false
+

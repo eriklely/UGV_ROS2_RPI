@@ -15,10 +15,11 @@ def generate_launch_description():
         'use_ekf_odom', default_value='false',
         description='If true, external EKF publishes odom->base_footprint; base_node should not publish TF'
     )
+    # FIX: Only publish TF from base_node when NO EKF is used AND on rpi
     pub_odom_tf_arg = DeclareLaunchArgument(
         'pub_odom_tf',
-        default_value=PythonExpression(["'true' if '", LaunchConfiguration('machine'), "' == 'rpi' and '", LaunchConfiguration('use_ekf_odom'), "' == 'false' else 'false'"]),
-        description='Whether to publish the tf from the original odom to the base_footprint. Auto-disabled on laptop or when EKF is active.'
+        default_value='false',
+        description='Whether to publish the tf from the original odom to the base_footprint. Set true only when use_ekf_odom=false AND machine=rpi'
     )
     use_rviz_arg = DeclareLaunchArgument(
         'use_rviz', default_value='false',
@@ -59,7 +60,7 @@ def generate_launch_description():
     )
     base_node = Node(
         package='ugv_base_node',
-        executable='base_node',
+        executable='base_node_ekf',
         namespace='ugv',
         parameters=[{'pub_odom_tf': LaunchConfiguration('pub_odom_tf')}]
     )
@@ -76,3 +77,4 @@ def generate_launch_description():
         rf2o_laser_odometry_launch,
         base_node
     ])
+
