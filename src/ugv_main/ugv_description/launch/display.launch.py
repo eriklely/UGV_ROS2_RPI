@@ -73,7 +73,7 @@ def launch_setup(context, *args, **kwargs):
         'executable': 'joint_state_publisher',
         'name': 'joint_state_publisher',
         'arguments': [urdf_model_path],
-        'condition': IfCondition(use_joint_state_publisher)
+        'condition': IfCondition(PythonExpression(["'", LaunchConfiguration('rviz_config'), "' == 'description'"]))
     }
 
     # Add namespace to parameters only if it's not empty
