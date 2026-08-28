@@ -19,14 +19,12 @@ def generate_launch_description():
     joy_node = Node(
         package='joy',
         executable='joy_node',
-        namespace='ugv',
     )
 
     # Create a node to control the robot using joystick input
     joy_ctrl_node = Node(
         package='ugv_tools',
         executable='joy_ctrl',
-        namespace='ugv',
     )
 
     # Return the launch description

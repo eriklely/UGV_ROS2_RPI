@@ -60,6 +60,7 @@ def launch_setup(context, *args, **kwargs):
         launch_arguments={
             'use_rviz': LaunchConfiguration('use_rviz'),
             'rviz_config': 'nav_2d',
+            'namespace': '',
         }.items(),
         condition=UnlessCondition(PythonExpression(["'", LaunchConfiguration('machine'), "' == 'rpi'"]))
     )
@@ -69,8 +70,8 @@ def launch_setup(context, *args, **kwargs):
         launch_arguments={
             'map': map_yaml_path,
             'params_file': param_file,
-            'namespace': 'ugv',
-            'use_namespace': 'true'
+            'namespace': '',
+            'use_namespace': 'false'
         }.items(),
         condition=LaunchConfigurationEquals('use_localization', 'amcl')
     )
@@ -80,8 +81,8 @@ def launch_setup(context, *args, **kwargs):
         launch_arguments={
             'map': map_yaml_path,
             'params_file': param_file,
-            'namespace': 'ugv',
-            'use_namespace': 'true'
+            'namespace': '',
+            'use_namespace': 'false'
         }.items(),
         condition=LaunchConfigurationEquals('use_localization', 'emcl')
     )
@@ -98,8 +99,8 @@ def launch_setup(context, *args, **kwargs):
         PythonLaunchDescriptionSource(os.path.join(get_package_share_directory('ugv_nav'), 'launch/nav_bringup', 'bringup_launch_cartographer.launch.py')),
          launch_arguments={
              'params_file': os.path.join(get_package_share_directory('ugv_nav'), 'param', 'emcl_dwa.yaml'),
-             'namespace': 'ugv',
-             'use_namespace': 'true'
+             'namespace': '',
+             'use_namespace': 'false'
          }.items(),
         condition=LaunchConfigurationEquals('use_localization', 'cartographer')
     )

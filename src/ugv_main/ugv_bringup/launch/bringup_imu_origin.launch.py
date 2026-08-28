@@ -37,20 +37,19 @@ def generate_launch_description():
         launch_arguments={
             'use_rviz': LaunchConfiguration('use_rviz'),
             'rviz_config': LaunchConfiguration('rviz_config'),
+            'namespace': '',
         }.items()
     ) 
     # Define the nodes to be launched                                     
     bringup_node = Node(
         package='ugv_bringup',
         executable='ugv_bringup',
-        namespace='ugv',
     )
     # Define the base node with parameters
     imu_complementary_filter_node = Node(
             package='imu_complementary_filter',
             executable='complementary_filter_node',
             name='complementary_filter_gain_node',
-            namespace='ugv',
             output='screen',
             parameters=[
                 {'do_bias_estimation': True},
@@ -64,7 +63,6 @@ def generate_launch_description():
     imu_filter_node = Node(
         package='imu_filter_madgwick',
         executable='imu_filter_madgwick_node',
-        namespace='ugv',
         parameters=[imu_filter_config]
     )
     # Include laser lidar launch file
@@ -76,13 +74,11 @@ def generate_launch_description():
     driver_node = Node(
         package='ugv_bringup',
         executable='ugv_driver',
-        namespace='ugv',
     )
     # Define the base node with parameters
     base_node = Node(
         package='ugv_base_node',
         executable='base_node',
-        namespace='ugv',
         parameters=[{'pub_odom_tf': LaunchConfiguration('pub_odom_tf')}]
     )
     

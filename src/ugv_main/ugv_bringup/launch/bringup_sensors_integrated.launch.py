@@ -32,7 +32,6 @@ def generate_launch_description():
     bringup_node = Node(
         package='ugv_bringup',
         executable='ugv_bringup',
-        namespace='ugv',
     )
     
     # Include the robot state launch from the ugv_description package
@@ -43,6 +42,7 @@ def generate_launch_description():
         launch_arguments={
             'use_rviz': LaunchConfiguration('use_rviz'),
             'rviz_config': LaunchConfiguration('rviz_config'),
+            'namespace': '',
         }.items()
     ) 
     
@@ -51,7 +51,6 @@ def generate_launch_description():
             package='imu_complementary_filter',
             executable='complementary_filter_node',
             name='complementary_filter_gain_node',
-            namespace='ugv',
             output='screen',
             parameters=[
                 {'do_bias_estimation': True},
@@ -72,14 +71,12 @@ def generate_launch_description():
     driver_node = Node(
         package='ugv_bringup',
         executable='ugv_driver',
-        namespace='ugv',
     )
     
     # Define the nodes to be launched
     base_node = Node(
         package='ugv_base_node',
         executable='base_node_ekf',
-        namespace='ugv',
         parameters=[{'pub_odom_tf': LaunchConfiguration('pub_odom_tf')}]
     )
 

@@ -35,17 +35,16 @@ def generate_launch_description():
         launch_arguments={
             'use_rviz': LaunchConfiguration('use_rviz'),
             'rviz_config': LaunchConfiguration('rviz_config'),
+            'namespace': '',
         }.items()
     )
     bringup_node = Node(
         package='ugv_bringup',
         executable='ugv_bringup',
-        namespace='ugv',
     )
     driver_node = Node(
         package='ugv_bringup',
         executable='ugv_driver',
-        namespace='ugv',
     )
     laser_bringup_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
@@ -60,7 +59,6 @@ def generate_launch_description():
     base_node = Node(
         package='ugv_base_node',
         executable='base_node_ekf',
-        namespace='ugv',
         parameters=[{'pub_odom_tf': pub_odom_tf_auto}]
     )
     return LaunchDescription([

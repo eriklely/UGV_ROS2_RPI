@@ -52,11 +52,14 @@ def launch_setup(context, *args, **kwargs):
     # Determine whether to use the joint_state_publisher_gui based on the rviz configuration
     use_joint_state_publisher_gui = 'true' if rviz_config == 'description' else context.launch_configurations.get('use_joint_state_publisher_gui', 'false')
 
+    # Get namespace from launch argument (default empty = no namespace)
+    namespace = context.launch_configurations.get('namespace', '')
+
     # Define the robot_state_publisher node to publish the robot's URDF model
     robot_state_publisher_node = Node(
         package='robot_state_publisher',
         executable='robot_state_publisher',
-        namespace='ugv',
+        namespace=namespace,
         arguments=[urdf_model_path]
     )
 
@@ -64,7 +67,7 @@ def launch_setup(context, *args, **kwargs):
     joint_state_publisher_gui_node = Node(
         package='joint_state_publisher_gui',
         executable='joint_state_publisher_gui',
-        namespace='ugv',
+        namespace=namespace,
         name='joint_state_publisher_gui',
         arguments=[urdf_model_path],
         condition=IfCondition(use_joint_state_publisher_gui)
@@ -79,7 +82,7 @@ def launch_setup(context, *args, **kwargs):
     joint_state_publisher_node = Node(
         package='joint_state_publisher',
         executable='joint_state_publisher',
-        namespace='ugv',
+        namespace=namespace,
         name='joint_state_publisher',
         arguments=[urdf_model_path],
         condition=IfCondition(use_joint_state_publisher)
@@ -115,6 +118,8 @@ def generate_launch_description():
         DeclareLaunchArgument('use_rviz', default_value='false', description='Whether to launch RViz2'),
         # Argument to specify which RViz configuration to use
         DeclareLaunchArgument('rviz_config', default_value='description', description='Choose which rviz configuration to use: description, bringup, slam_2d, slam_3d, nav_2d, nav_3d'),
+        # Argument to specify the namespace (empty = no namespace)
+        DeclareLaunchArgument('namespace', default_value='', description='Namespace for robot_state_publisher and joint_state_publisher'),
         # Opaque function to execute the setup
         OpaqueFunction(function=launch_setup)
     ])

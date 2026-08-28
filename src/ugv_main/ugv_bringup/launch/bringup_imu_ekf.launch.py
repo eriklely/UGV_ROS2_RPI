@@ -42,6 +42,7 @@ def generate_launch_description():
         launch_arguments={
             'use_rviz': LaunchConfiguration('use_rviz'),
             'rviz_config': LaunchConfiguration('rviz_config'),
+            'namespace': '',
         }.items()
     )
     imu_complementary_filter_node = Node(

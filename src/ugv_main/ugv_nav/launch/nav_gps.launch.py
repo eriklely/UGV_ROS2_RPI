@@ -47,6 +47,7 @@ def launch_setup(context, *args, **kwargs):
         launch_arguments={
             'use_rviz': LaunchConfiguration('use_rviz'),
             'rviz_config': 'nav_2d',
+            'namespace': '',
         }.items()
     )
 
