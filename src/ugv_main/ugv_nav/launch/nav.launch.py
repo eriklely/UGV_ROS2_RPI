@@ -71,7 +71,7 @@ def launch_setup(context, *args, **kwargs):
             'map': map_yaml_path,
             'params_file': param_file,
             'namespace': '',
-            'use_namespace': 'false'
+            'use_namespace': 'False'
         }.items(),
         condition=LaunchConfigurationEquals('use_localization', 'amcl')
     )
@@ -82,7 +82,7 @@ def launch_setup(context, *args, **kwargs):
             'map': map_yaml_path,
             'params_file': param_file,
             'namespace': '',
-            'use_namespace': 'false'
+            'use_namespace': 'False'
         }.items(),
         condition=LaunchConfigurationEquals('use_localization', 'emcl')
     )
@@ -100,7 +100,7 @@ def launch_setup(context, *args, **kwargs):
          launch_arguments={
              'params_file': os.path.join(get_package_share_directory('ugv_nav'), 'param', 'emcl_dwa.yaml'),
              'namespace': '',
-             'use_namespace': 'false'
+             'use_namespace': 'False' 
          }.items(),
         condition=LaunchConfigurationEquals('use_localization', 'cartographer')
     )
