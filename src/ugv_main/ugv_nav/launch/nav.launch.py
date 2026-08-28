@@ -61,6 +61,7 @@ def launch_setup(context, *args, **kwargs):
             'use_rviz': LaunchConfiguration('use_rviz'),
             'rviz_config': 'nav_2d',
             'namespace': '',
+            'publish_robot_state': 'false',
         }.items(),
         condition=UnlessCondition(PythonExpression(["'", LaunchConfiguration('machine'), "' == 'rpi'"]))
     )

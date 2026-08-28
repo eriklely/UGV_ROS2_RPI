@@ -90,6 +90,7 @@ def generate_launch_description():
             'use_rviz': LaunchConfiguration('use_rviz'),
             'rviz_config': 'slam_3d',
             'namespace': '',
+            'publish_robot_state': 'false',
         }.items(),
         condition=UnlessCondition(use_lidar)
     )
