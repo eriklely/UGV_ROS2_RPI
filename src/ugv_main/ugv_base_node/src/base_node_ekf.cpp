@@ -160,7 +160,7 @@ private:
         pre_odr = now_odr;
 
         float dxy_ave = (dright + dleft) / 2.0;
-        float dth = (dright - dleft) / 0.175;
+        float dth = (dright - dleft) / 0.39;
 
         // Guard against division by zero
         if (dt <= 0.0 || !std::isfinite(dt))
