@@ -55,38 +55,37 @@ def launch_setup(context, *args, **kwargs):
     # Get namespace from launch argument (default empty = no namespace)
     namespace = context.launch_configurations.get('namespace', '')
 
-    # Define the robot_state_publisher node to publish the robot's URDF model
-    robot_state_publisher_node = Node(
-        package='robot_state_publisher',
-        executable='robot_state_publisher',
-        namespace=namespace,
-        arguments=[urdf_model_path]
-    )
+    # Define common node parameters
+    robot_state_publisher_params = {
+        'package': 'robot_state_publisher',
+        'executable': 'robot_state_publisher',
+        'arguments': [urdf_model_path]
+    }
+    joint_state_publisher_gui_params = {
+        'package': 'joint_state_publisher_gui',
+        'executable': 'joint_state_publisher_gui',
+        'name': 'joint_state_publisher_gui',
+        'arguments': [urdf_model_path],
+        'condition': IfCondition(use_joint_state_publisher_gui)
+    }
+    joint_state_publisher_params = {
+        'package': 'joint_state_publisher',
+        'executable': 'joint_state_publisher',
+        'name': 'joint_state_publisher',
+        'arguments': [urdf_model_path],
+        'condition': IfCondition(use_joint_state_publisher)
+    }
 
-    # Define the joint_state_publisher_gui node if the GUI is enabled
-    joint_state_publisher_gui_node = Node(
-        package='joint_state_publisher_gui',
-        executable='joint_state_publisher_gui',
-        namespace=namespace,
-        name='joint_state_publisher_gui',
-        arguments=[urdf_model_path],
-        condition=IfCondition(use_joint_state_publisher_gui)
-    )
+    # Add namespace to parameters only if it's not empty
+    if namespace:
+        robot_state_publisher_params['namespace'] = namespace
+        joint_state_publisher_gui_params['namespace'] = namespace
+        joint_state_publisher_params['namespace'] = namespace
 
-    # Determine whether to use the generic joint_state_publisher (for description only)
-    # For bringup/slam/nav configs, we use hardware joint state feedback from ugv_bringup
-    use_joint_state_publisher = 'true' if rviz_config == 'description' else 'false'
-
-    # Define the joint_state_publisher node to publish joint states when the GUI is disabled
-    # Only enabled for 'description' config; for bringup/slam/nav, hardware feedback is used
-    joint_state_publisher_node = Node(
-        package='joint_state_publisher',
-        executable='joint_state_publisher',
-        namespace=namespace,
-        name='joint_state_publisher',
-        arguments=[urdf_model_path],
-        condition=IfCondition(use_joint_state_publisher)
-    )
+    # Define the nodes
+    robot_state_publisher_node = Node(**robot_state_publisher_params)
+    joint_state_publisher_gui_node = Node(**joint_state_publisher_gui_params)
+    joint_state_publisher_node = Node(**joint_state_publisher_params)
 
     # Get the appropriate RViz configuration file
     rviz_config_file = get_rviz_config_file(context)
