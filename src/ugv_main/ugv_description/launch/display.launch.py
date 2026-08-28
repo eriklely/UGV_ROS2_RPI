@@ -55,25 +55,29 @@ def launch_setup(context, *args, **kwargs):
     # Get namespace from launch argument (default empty = no namespace)
     namespace = context.launch_configurations.get('namespace', '')
 
+    # Read the URDF file
+    with open(urdf_model_path, 'r') as f:
+        robot_desc = f.read()
+
     # Define common node parameters
     robot_state_publisher_params = {
         'package': 'robot_state_publisher',
         'executable': 'robot_state_publisher',
-        'arguments': [urdf_model_path]
+        'parameters': [{'robot_description': robot_desc}],
     }
     joint_state_publisher_gui_params = {
         'package': 'joint_state_publisher_gui',
         'executable': 'joint_state_publisher_gui',
         'name': 'joint_state_publisher_gui',
-        'arguments': [urdf_model_path],
+        'parameters': [{'robot_description': robot_desc}],
         'condition': IfCondition(use_joint_state_publisher_gui)
     }
     joint_state_publisher_params = {
         'package': 'joint_state_publisher',
         'executable': 'joint_state_publisher',
         'name': 'joint_state_publisher',
-        'arguments': [urdf_model_path],
-        'condition': IfCondition(PythonExpression(["'", LaunchConfiguration('rviz_config'), "' != 'description' or '", LaunchConfiguration('use_joint_state_publisher_gui'), "' == 'true'"]))
+        'parameters': [{'robot_description': robot_desc}],
+        'condition': IfCondition(PythonExpression(["'", LaunchConfiguration('use_rviz'), "' == 'true' and not ", LaunchConfiguration('use_joint_state_publisher_gui')]))
     }
 
     # Add namespace to parameters only if it's not empty
