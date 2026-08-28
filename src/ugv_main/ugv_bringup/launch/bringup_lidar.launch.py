@@ -60,6 +60,7 @@ def generate_launch_description():
         package='ugv_base_node',
         executable='base_node_ekf',
         parameters=[{'pub_odom_tf': pub_odom_tf_auto}]
+        remappings=[('odom_raw', 'odom')],
     )
     return LaunchDescription([
         machine_arg,
