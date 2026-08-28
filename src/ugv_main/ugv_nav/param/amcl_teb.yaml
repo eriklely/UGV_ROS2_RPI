@@ -131,7 +131,7 @@ controller_server:
       primary_controller: "teb_local_planner::TebLocalPlannerROS"
       angular_dist_threshold: 0.785
       forward_sampling_distance: 0.5
-      rotate_to_heading_angular_vel: 0.8
+      rotate_to_heading_angular_vel: 1.8
       max_angular_accel: 3.2
       simulate_ahead_time: 1.0
       footprint_model.type: circular
@@ -150,10 +150,10 @@ controller_server:
       max_samples: 20
       max_global_plan_lookahead_dist: 1.0
       visualize_hc_graph: True
-      max_vel_x: 0.20
+      max_vel_x: 0.26
       max_vel_theta: 1.0
-      acc_lim_x: 0.8
-      acc_lim_theta: 1.0
+      acc_lim_x: 2.5
+      acc_lim_theta: 3.2
 
 local_costmap:
   local_costmap:
@@ -274,9 +274,9 @@ recoveries_server:
     transform_timeout: 0.5
     use_sim_time: False
     simulate_ahead_time: 2.0
-    max_rotational_vel: 2.0
-    min_rotational_vel: 0.4
-    rotational_acc_lim: 3.2
+    max_rotational_vel: 0.5
+    min_rotational_vel: 0.05
+    rotational_acc_lim: 0.05
 
 robot_state_publisher:
   ros__parameters:
