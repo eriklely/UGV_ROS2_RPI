@@ -18,7 +18,7 @@ def generate_launch_description():
     # FIX: Automatically set pub_odom_tf based on machine and use_ekf_odom
     # When NO EKF (use_ekf_odom=false) AND on RPi (machine=rpi), base_node must publish odom->base_footprint TF
     pub_odom_tf_auto = PythonExpression([
-        "'true' if (", LaunchConfiguration('use_ekf_odom'), " == 'false' and '", LaunchConfiguration('machine'), "' == 'rpi') else 'false'"
+        "'", LaunchConfiguration('use_ekf_odom'), "' == 'false' and '", LaunchConfiguration('machine'), "' == 'rpi'"
     ])
     use_rviz_arg = DeclareLaunchArgument(
         'use_rviz', default_value='false',

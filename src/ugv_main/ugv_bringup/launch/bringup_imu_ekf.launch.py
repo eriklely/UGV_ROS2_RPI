@@ -83,7 +83,7 @@ def generate_launch_description():
     base_node = Node(
         package='ugv_base_node',
         executable='base_node_ekf',
-        parameters=[{'pub_odom_tf': 'false'}]
+        parameters=[{'pub_odom_tf': False}]
     )
     
     # EKF config selection based on lidar odom usage
