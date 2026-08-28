@@ -15,12 +15,11 @@ def generate_launch_description():
         'use_ekf_odom', default_value='false',
         description='If true, external EKF publishes odom->base_footprint; base_node should not publish TF'
     )
-    # FIX: Only publish TF from base_node when NO EKF is used AND on rpi
-    pub_odom_tf_arg = DeclareLaunchArgument(
-        'pub_odom_tf',
-        default_value='false',
-        description='Whether to publish the tf from the original odom to the base_footprint. Set true only when use_ekf_odom=false AND machine=rpi'
-    )
+    # FIX: Automatically set pub_odom_tf based on machine and use_ekf_odom
+    # When NO EKF (use_ekf_odom=false) AND on RPi (machine=rpi), base_node must publish odom->base_footprint TF
+    pub_odom_tf_auto = PythonExpression([
+        "'true' if (", LaunchConfiguration('use_ekf_odom'), " == 'false' and '", LaunchConfiguration('machine'), "' == 'rpi') else 'false'"
+    ])
     use_rviz_arg = DeclareLaunchArgument(
         'use_rviz', default_value='false',
         description='Whether to launch RViz2'
@@ -62,12 +61,11 @@ def generate_launch_description():
         package='ugv_base_node',
         executable='base_node_ekf',
         namespace='ugv',
-        parameters=[{'pub_odom_tf': LaunchConfiguration('pub_odom_tf')}]
+        parameters=[{'pub_odom_tf': pub_odom_tf_auto}]
     )
     return LaunchDescription([
         machine_arg,
         use_ekf_odom_arg,
-        pub_odom_tf_arg,
         use_rviz_arg,
         rviz_config_arg,
         robot_state_launch,

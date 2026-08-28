@@ -106,8 +106,7 @@ def generate_launch_description():
         output='screen',
         parameters=[ekf_config_file, {'publish_tf': True}],
         remappings=[('/odometry/filtered', '/odom')],
-        condition=IfCondition(LaunchConfiguration('use_lidar_odom')),
-        # Only on rpi
+        condition=IfCondition(PythonExpression(["'", LaunchConfiguration('use_lidar_odom'), "' == 'true' and '", LaunchConfiguration('machine'), "' == 'rpi'"])),
     )
     
     ekf_node_with_lidar_laptop = Node(
@@ -117,8 +116,7 @@ def generate_launch_description():
         output='screen',
         parameters=[ekf_config_file, {'publish_tf': False}],
         remappings=[('/odometry/filtered', '/odom')],
-        condition=IfCondition(LaunchConfiguration('use_lidar_odom')),
-        # Only on laptop
+        condition=IfCondition(PythonExpression(["'", LaunchConfiguration('use_lidar_odom'), "' == 'true' and '", LaunchConfiguration('machine'), "' == 'laptop'"])),
     )
 
     ekf_node_no_lidar_rpi = Node(
@@ -128,8 +126,7 @@ def generate_launch_description():
         output='screen',
         parameters=[ekf_config_file_no_lidar, {'publish_tf': True}],
         remappings=[('/odometry/filtered', '/odom')],
-        condition=UnlessCondition(LaunchConfiguration('use_lidar_odom')),
-        # Only on rpi
+        condition=IfCondition(PythonExpression(["'", LaunchConfiguration('use_lidar_odom'), "' == 'false' and '", LaunchConfiguration('machine'), "' == 'rpi'"])),
     )
 
     ekf_node_no_lidar_laptop = Node(
@@ -139,8 +136,7 @@ def generate_launch_description():
         output='screen',
         parameters=[ekf_config_file_no_lidar, {'publish_tf': False}],
         remappings=[('/odometry/filtered', '/odom')],
-        condition=UnlessCondition(LaunchConfiguration('use_lidar_odom')),
-        # Only on laptop
+        condition=IfCondition(PythonExpression(["'", LaunchConfiguration('use_lidar_odom'), "' == 'false' and '", LaunchConfiguration('machine'), "' == 'laptop'"])),
     )
 
     return LaunchDescription([
