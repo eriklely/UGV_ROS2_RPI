@@ -34,7 +34,6 @@ def generate_launch_description():
     bringup_node = Node(
         package='ugv_bringup',
         executable='ugv_bringup',
-        namespace='ugv',
     )
     robot_state_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
@@ -49,7 +48,6 @@ def generate_launch_description():
             package='imu_complementary_filter',
             executable='complementary_filter_node',
             name='complementary_filter_gain_node',
-            namespace='ugv',
             output='screen',
             parameters=[
                 {'do_bias_estimation': True},
@@ -62,7 +60,6 @@ def generate_launch_description():
     imu_filter_node = Node(
         package='imu_filter_madgwick',
         executable='imu_filter_madgwick_node',
-        namespace='ugv',
         parameters=[imu_filter_config]
     )
     laser_bringup_launch = IncludeLaunchDescription(PythonLaunchDescriptionSource(
@@ -81,12 +78,10 @@ def generate_launch_description():
     driver_node = Node(
         package='ugv_bringup',
         executable='ugv_driver',
-        namespace='ugv',
     )
     base_node = Node(
         package='ugv_base_node',
         executable='base_node_ekf',
-        namespace='ugv',
         parameters=[{'pub_odom_tf': LaunchConfiguration('pub_odom_tf')}]
     )
     
@@ -104,10 +99,9 @@ def generate_launch_description():
         package='robot_localization',
         executable='ekf_node',
         name='ekf_filter_node',
-        namespace='ugv',
         output='screen',
         parameters=[ekf_config_file, {'publish_tf': PythonExpression(["'true' if '", LaunchConfiguration('machine'), "' == 'rpi' else 'false'"])}],
-        remappings=[('odometry/filtered', 'odom')],
+        remappings=[('/odometry/filtered', '/odom')],
         condition=IfCondition(LaunchConfiguration('use_lidar_odom'))
     )
     
@@ -115,24 +109,10 @@ def generate_launch_description():
         package='robot_localization',
         executable='ekf_node',
         name='ekf_filter_node',
-        namespace='ugv',
         output='screen',
         parameters=[ekf_config_file_no_lidar, {'publish_tf': PythonExpression(["'true' if '", LaunchConfiguration('machine'), "' == 'rpi' else 'false'"])}],
-        remappings=[('odometry/filtered', 'odom')],
+        remappings=[('/odometry/filtered', '/odom')],
         condition=UnlessCondition(LaunchConfiguration('use_lidar_odom'))
-    )
-
-    # Include bringup_lidar with machine argument passed through
-    bringup_lidar_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            os.path.join(get_package_share_directory('ugv_bringup'), 'launch', 'bringup_lidar.launch.py')
-        ),
-        launch_arguments={
-            'use_rviz': LaunchConfiguration('use_rviz'),
-            'rviz_config': 'slam_2d',
-            'machine': LaunchConfiguration('machine'),
-            'use_ekf_odom': 'true',  # EKF is running, so base_node should not publish TF
-        }.items()
     )
 
     return LaunchDescription([
@@ -142,7 +122,7 @@ def generate_launch_description():
         rviz_config_arg,
         use_lidar_odom_arg,
         robot_state_launch,
-        bringup_lidar_launch,
+        bringup_node,
         imu_complementary_filter_node,
         #imu_filter_node,
         laser_bringup_launch,
